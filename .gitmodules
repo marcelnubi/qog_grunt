@@ -1,0 +1,3 @@
+[submodule "mqtt_c_client"]
+	path = mqtt_c_client
+	url = https://dev.qogni.com/firmware/mqtt_c_client.git
