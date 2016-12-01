@@ -1,3 +1,6 @@
 [submodule "mqtt_c_client"]
 	path = mqtt_c_client
 	url = https://dev.qogni.com/firmware/mqtt_c_client.git
+[submodule "winc_1500_lib"]
+	path = winc_1500_lib
+	url = https://dev.qogni.com/firmware/winc_1500_lib.git
