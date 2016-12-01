@@ -4,3 +4,9 @@
 [submodule "winc_1500_lib"]
 	path = winc_1500_lib
 	url = https://dev.qogni.com/firmware/winc_1500_lib.git
+[submodule "overseer_messages"]
+	path = overseer_messages
+	url = https://dev.qogni.com/software/overseer_messages.git
+[submodule "nanopb"]
+	path = nanopb
+	url = https://github.com/marcelnubi/nanopb.git
