@@ -1,0 +1,20 @@
+/*
+ * qog_gateway_config.h
+ *
+ *  Created on: Dec 1, 2016
+ *      Author: Marcel
+ */
+
+#ifndef QOG_GATEWAY_CONFIG_H_
+#define QOG_GATEWAY_CONFIG_H_
+
+#define OVS_RX_SOCKET_BUFFER_SIZE 512
+#define OVS_TX_SOCKET_BUFFER_SIZE 512
+#define OVS_NUMBER_DATA_BUFFER_SIZE 32
+
+#define MAX_DATA_SOURCE_TASKS 5
+#define MAX_GATEWAY_TASKS MAX_DATA_SOURCE_TASKS+3
+#define MAX_SAMPLE_BUFFER_SIZE 16
+#define MAX_DATA_CHANNELS 1
+
+#endif /* QOG_GATEWAY_CONFIG_H_ */
