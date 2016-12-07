@@ -6,6 +6,8 @@
  */
 
 #include "cmsis_os.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include "stdio.h"
 #include "string.h"
@@ -24,6 +26,7 @@ static Gateway m_gateway;
 
 static void gw_init_gateway()
 {
+	uint8_t tsk = 0;
 	//TODO Retrive WLAN config
 
 	//TODO Retrieve MQTT Broker config
@@ -37,9 +40,8 @@ static void gw_init_gateway()
 	m_gateway.Status = GW_STARTING;
 
 	m_gateway.Tasks.WifiTask = &WifiTaskDef;
-	//MQTT Client
-	//MQTT Publisher
-	//Requested heap vem da onde?
+	m_gateway.Tasks.MQTTClientTask = &MQTTClientTaskDef;
+	m_gateway.Tasks.MQTTPublisherTask = &MQTTPublisherTaskDef;
 }
 
 static void gw_init_shared_queues()
@@ -51,7 +53,7 @@ static void gw_init_shared_queues()
 	uint8_t initq = 0;
 	for (initq = 0; initq < MAX_SAMPLE_BUFFER_SIZE; initq++)
 	{
-		xQueueSend(m_gateway.DataAvailableQueue, initq, 100);
+		xQueueSend(m_gateway.DataAvailableQueue, (void * )&initq, 100);
 	}
 
 	m_gateway.SocketRxQueue = xQueueCreate(OVS_RX_SOCKET_BUFFER_SIZE,
@@ -66,40 +68,42 @@ static void gw_init_tasks()
 	uint8_t tsk = 0;
 	gw_init_shared_queues();
 
-	xTaskCreate(&m_gateway.Tasks.WifiTask, "GW: Wifi Task",
-			m_gateway.Tasks.WifiTask->requestedHeap, &m_gateway,
-			tskIDLE_PRIORITY + 3, &m_gateway.Tasks.WifiTask->Handle);
+	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityNormal, 0,
+			128);
+	m_gateway.Tasks.WifiTask->Handle = osThreadCreate(osThread(WifiTask),
+			&m_gateway);
 
-	xTaskCreate(&m_gateway.Tasks.MQTTClientTask, "GW: MQTT Client",
-			m_gateway.Tasks.MQTTClientTask->requestedHeap, &m_gateway,
-			tskIDLE_PRIORITY, &m_gateway.Tasks.MQTTClientTask->Handle);
+	osThreadDef(MQTTClient, m_gateway.Tasks.MQTTClientTask->Task,
+			osPriorityNormal, 0, 128);
+	m_gateway.Tasks.MQTTClientTask->Handle = osThreadCreate(
+			osThread(MQTTClient), &m_gateway);
 
-	xTaskCreate(&m_gateway.Tasks.MQTTPublisherTask, "GW: MQTT Publisher",
-			m_gateway.Tasks.MQTTPublisherTask->requestedHeap, &m_gateway,
-			tskIDLE_PRIORITY + 1, &m_gateway.Tasks.MQTTPublisherTask->Handle);
+	osThreadDef(MQTTPublisherTask, m_gateway.Tasks.MQTTPublisherTask->Task,
+			osPriorityNormal, 0, 128);
+	m_gateway.Tasks.MQTTPublisherTask->Handle = osThreadCreate(
+			osThread(MQTTPublisherTask), &m_gateway);
 
 	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
 	{
-		if (m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task != NULL)
+		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] != NULL)
 		{
-			xTaskCreate(&m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task, NULL,
-					m_gateway.Tasks.DataSourceTaskGroup[tsk]->requestedHeap,
-					&m_gateway, tskIDLE_PRIORITY + 2,
-					&m_gateway.Tasks.DataSourceTaskGroup[tsk]->Handle);
+			osThreadDef(DataSource,
+					m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task, osPriorityNormal,
+					0, 128);
+			m_gateway.Tasks.DataSourceTaskGroup[tsk]->Handle = osThreadCreate(
+					osThread(DataSource), &m_gateway);
 		}
 	}
 }
 
-void qog_ovs_gw_register_data_source(qog_Task (*dataSourceFn)(Gateway * gwInst),
-		uint32_t heapSize)
+void qog_ovs_gw_register_data_source(qog_gateway_task * task)
 {
 	uint8_t tsk = 0;
 	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
 	{
-		if (m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task == NULL)
+		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] == NULL)
 		{
-			m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task = dataSourceFn;
-			m_gateway.Tasks.DataSourceTaskGroup[tsk]->requestedHeap = heapSize;
+			m_gateway.Tasks.DataSourceTaskGroup[tsk] = task;
 			break;
 		}
 	}
