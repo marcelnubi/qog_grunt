@@ -1,12 +1,12 @@
 [submodule "mqtt_c_client"]
 	path = mqtt_c_client
-	url = https://dev.qogni.com/firmware/mqtt_c_client.git
+	url = https://bitbucket.org/qogni/mqtt_c_client.git
 [submodule "winc_1500_lib"]
 	path = winc_1500_lib
-	url = https://dev.qogni.com/firmware/winc_1500_lib.git
+	url = https://bitbucket.org/qogni/winc_1500_lib.git
 [submodule "overseer_messages"]
 	path = overseer_messages
-	url = https://dev.qogni.com/software/overseer_messages.git
+	url = https://bitbucket.org/qogni/overseer_messages.git
 [submodule "nanopb"]
 	path = nanopb
 	url = https://github.com/marcelnubi/nanopb.git
