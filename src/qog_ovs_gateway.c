@@ -20,7 +20,7 @@
 #include "OVS_ChannelNumberData.pb.h"
 #include "OVS_Channel.pb.h"
 
-#include "Tasks/inc/OVS_Gateway_Task.h"
+#include "OVS_Gateway_Task.h"
 
 static Gateway m_gateway;
 
