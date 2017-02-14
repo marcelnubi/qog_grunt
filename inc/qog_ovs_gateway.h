@@ -19,6 +19,25 @@ typedef QueueHandle_t qog_Queue;
 
 typedef struct
 {
+	uint32_t ChannelId;
+	uint32_t Timestamp;
+	double Value;
+} qog_DataSample;
+
+typedef struct
+{
+	qog_Queue DataAvailableQueue;
+	qog_Queue DataUsedQueue;
+} qog_DataSource_queues;
+
+typedef struct
+{
+	uint32_t Period;
+	uint8_t Parameters[32];
+} qog_DataSource_config;
+
+typedef struct
+{
 	qog_Task (*Task)(void *gwInst);
 	uint32_t requestedHeap;
 	TaskHandle_t Handle;

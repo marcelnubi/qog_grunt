@@ -53,7 +53,8 @@ typedef struct
 	qog_gateway_task * WifiTask;
 	qog_gateway_task * MQTTClientTask;
 	qog_gateway_task * MQTTPublisherTask;
-	qog_gateway_task * DataSourceTaskGroup[MAX_DATA_SOURCE_TASKS];
+	qog_gateway_task * DataSourceTask;
+	qog_gateway_task * LocalStorageTask;
 } GatewayTasks;
 
 struct Gateway
@@ -63,12 +64,12 @@ struct Gateway
 	DataChannel DataChannels[MAX_DATA_CHANNELS];
 	GatewayStatus Status;
 	GatewayTasks Tasks;
-	qog_Queue DataUsedQueue;
-	qog_Queue DataAvailableQueue;
+	qog_DataSource_queues DataSourceQs;
 	qog_Queue SocketRxQueue;
 	qog_Queue SocketTxQueue;
 	ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
 	qog_Mutex MQTTMutex;
+	qog_Mutex LocalStorageMutex;
 };
 
 #endif /* QOG_OVS_GATEWAY_INTERNAL_TYPES_H_ */

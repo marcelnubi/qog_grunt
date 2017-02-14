@@ -26,7 +26,6 @@ static Gateway m_gateway;
 
 static void gw_init_gateway()
 {
-	uint8_t tsk = 0;
 	//TODO Retrive WLAN config
 
 	//TODO Retrieve MQTT Broker config
@@ -36,24 +35,29 @@ static void gw_init_gateway()
 	sprintf((char*) m_gateway.BrokerParams.Password, "qognata");
 
 	m_gateway.MQTTMutex = xSemaphoreCreateMutex();
+	m_gateway.LocalStorageMutex = xSemaphoreCreateMutex();
 
 	m_gateway.Status = GW_STARTING;
 
 	m_gateway.Tasks.WifiTask = &WifiTaskDef;
 	m_gateway.Tasks.MQTTClientTask = &MQTTClientTaskDef;
 	m_gateway.Tasks.MQTTPublisherTask = &MQTTPublisherTaskDef;
+	m_gateway.Tasks.DataSourceTask = &DataSourceTaskDef;
+	m_gateway.Tasks.LocalStorageTask = &LocalStorageTaskDef;
 }
 
 static void gw_init_shared_queues()
 {
-	m_gateway.DataAvailableQueue = xQueueCreate(OVS_NUMBER_DATA_BUFFER_SIZE,
-			sizeof(uint8_t));
-	m_gateway.DataUsedQueue = xQueueCreate(OVS_NUMBER_DATA_BUFFER_SIZE,
-			sizeof(uint8_t));
+	m_gateway.DataSourceQs.DataAvailableQueue = xQueueCreate(
+			OVS_NUMBER_DATA_BUFFER_SIZE, sizeof(uint8_t));
+	m_gateway.DataSourceQs.DataUsedQueue = xQueueCreate(
+			OVS_NUMBER_DATA_BUFFER_SIZE, sizeof(uint8_t));
+
 	uint8_t initq = 0;
 	for (initq = 0; initq < MAX_SAMPLE_BUFFER_SIZE; initq++)
 	{
-		xQueueSend(m_gateway.DataAvailableQueue, (void * )&initq, 100);
+		xQueueSend(m_gateway.DataSourceQs.DataAvailableQueue, (void * )&initq,
+				100);
 	}
 
 	m_gateway.SocketRxQueue = xQueueCreate(OVS_RX_SOCKET_BUFFER_SIZE,
@@ -65,7 +69,7 @@ static void gw_init_shared_queues()
 
 static void gw_init_tasks()
 {
-	uint8_t tsk = 0;
+//	uint8_t tsk = 0;
 	gw_init_shared_queues();
 
 	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityNormal, 0,
@@ -83,32 +87,38 @@ static void gw_init_tasks()
 	m_gateway.Tasks.MQTTPublisherTask->Handle = osThreadCreate(
 			osThread(MQTTPublisherTask), &m_gateway);
 
-	qog_ovs_gw_init();
-	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
-	{
-		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] != NULL)
-		{
-			osThreadDef(DataSource,
-					m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task, osPriorityNormal,
-					0, 128);
-			m_gateway.Tasks.DataSourceTaskGroup[tsk]->Handle = osThreadCreate(
-					osThread(DataSource), &m_gateway);
-		}
-	}
+	osThreadDef(DataSourceTask, m_gateway.Tasks.DataSourceTask->Task,
+			osPriorityNormal, 0, 128);
+	m_gateway.Tasks.DataSourceTask->Handle = osThreadCreate(
+			osThread(MQTTPublisherTask), &m_gateway);
+
+
+//	qog_ovs_gw_init();
+//	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
+//	{
+//		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] != NULL)
+//		{
+//			osThreadDef(DataSource,
+//					m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task,
+//					osPriorityNormal, 0, 128);
+//			m_gateway.Tasks.DataSourceTaskGroup[tsk]->Handle = osThreadCreate(
+//					osThread(DataSource), &m_gateway.DataSourceQs);
+//		}
+//	}
 }
 
-void qog_ovs_gw_register_data_source(qog_gateway_task * task)
-{
-	uint8_t tsk = 0;
-	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
-	{
-		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] == NULL)
-		{
-			m_gateway.Tasks.DataSourceTaskGroup[tsk] = task;
-			break;
-		}
-	}
-}
+//void qog_ovs_gw_register_data_source(qog_gateway_task * task)
+//{
+//	uint8_t tsk = 0;
+//	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
+//	{
+//		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] == NULL)
+//		{
+//			m_gateway.Tasks.DataSourceTaskGroup[tsk] = task;
+//			break;
+//		}
+//	}
+//}
 
 void qog_ovs_run()
 {
