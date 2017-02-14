@@ -1,26 +1,22 @@
 /*
- * qog_ovs_gateway_types.h
+ * qog_ovs_gateway_internal_types.h
  *
- *  Created on: Dec 1, 2016
+ *  Created on: Feb 13, 2017
  *      Author: Marcel
  */
 
-#ifndef INC_QOG_OVS_GATEWAY_TYPES_H_
-#define INC_QOG_OVS_GATEWAY_TYPES_H_
+#ifndef QOG_OVS_GATEWAY_INTERNAL_TYPES_H_
+#define QOG_OVS_GATEWAY_INTERNAL_TYPES_H_
 
+#include "qog_ovs_gateway.h"
 #include "qog_gateway_config.h"
 #include "OVS_Channel.pb.h"
 #include "OVS_ChannelNumberData.pb.h"
 
 #include "FreeRTOS.h"
-
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
-
-typedef SemaphoreHandle_t qog_Mutex;
-typedef TaskFunction_t qog_Task;
-typedef QueueHandle_t qog_Queue;
 
 typedef struct
 {
@@ -41,17 +37,16 @@ typedef Channel DataChannel;
 
 typedef enum
 {
-	GW_STARTING = 0, GW_AP_CONFIG_MODE, GW_WLAN_CONNECTED,GW_BROKER_DNS_RESOLVED, GW_BROKER_SOCKET_OPEN,GW_MQTT_CLIENT_CONNECTED, GW_ERROR
+	GW_STARTING = 0,
+	GW_AP_CONFIG_MODE,
+	GW_WLAN_CONNECTED,
+	GW_BROKER_DNS_RESOLVED,
+	GW_BROKER_SOCKET_OPEN,
+	GW_MQTT_CLIENT_CONNECTED,
+	GW_ERROR
 } GatewayStatus;
 
 typedef struct Gateway Gateway;
-
-typedef struct
-{
-	qog_Task (*Task)(Gateway *gwInst);
-	uint32_t requestedHeap;
-	TaskHandle_t Handle;
-} qog_gateway_task;
 
 typedef struct
 {
@@ -68,12 +63,12 @@ struct Gateway
 	DataChannel DataChannels[MAX_DATA_CHANNELS];
 	GatewayStatus Status;
 	GatewayTasks Tasks;
-	qog_Queue  DataUsedQueue;
-	qog_Queue  DataAvailableQueue;
-	qog_Queue  SocketRxQueue;
-	qog_Queue  SocketTxQueue;
-	ChannelNumberData  DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
-	qog_Mutex  MQTTMutex;
+	qog_Queue DataUsedQueue;
+	qog_Queue DataAvailableQueue;
+	qog_Queue SocketRxQueue;
+	qog_Queue SocketTxQueue;
+	ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
+	qog_Mutex MQTTMutex;
 };
 
-#endif /* INC_QOG_OVS_GATEWAY_TYPES_H_ */
+#endif /* QOG_OVS_GATEWAY_INTERNAL_TYPES_H_ */

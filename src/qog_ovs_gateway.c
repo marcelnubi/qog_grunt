@@ -14,7 +14,7 @@
 
 #include "../qog_ovs_gateway.h"
 #include "../qog_gateway_config.h"
-#include "../qog_ovs_gateway_types.h"
+#include "../qog_ovs_gateway_internal_types.h"
 
 #include "Overseer_Connection.h"
 #include "OVS_ChannelNumberData.pb.h"
