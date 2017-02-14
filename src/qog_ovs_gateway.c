@@ -12,9 +12,9 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "../qog_ovs_gateway.h"
-#include "../qog_gateway_config.h"
-#include "../qog_ovs_gateway_internal_types.h"
+#include "qog_ovs_gateway.h"
+#include "qog_gateway_config.h"
+#include "qog_ovs_gateway_internal_types.h"
 
 #include "Overseer_Connection.h"
 #include "OVS_ChannelNumberData.pb.h"
@@ -83,6 +83,7 @@ static void gw_init_tasks()
 	m_gateway.Tasks.MQTTPublisherTask->Handle = osThreadCreate(
 			osThread(MQTTPublisherTask), &m_gateway);
 
+	qog_ovs_gw_init();
 	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
 	{
 		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] != NULL)

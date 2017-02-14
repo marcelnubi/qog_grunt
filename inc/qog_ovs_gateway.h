@@ -24,6 +24,7 @@ typedef struct
 	TaskHandle_t Handle;
 } qog_gateway_task;
 
+void qog_ovs_gw_init();
 void qog_ovs_gw_register_data_source(qog_gateway_task * task);
 void qog_ovs_run();
 #endif /* INC_QOG_OVS_GATEWAY_H_ */
