@@ -254,6 +254,35 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 //			(tenuM2mSecType)QogniBrokerParams.WLAN_AUTH, (char *) QogniBrokerParams.WLAN_PSK, M2M_WIFI_CH_ALL);
 //
 //	m2m_wifi_handle_events(NULL);
+
+	for (;;)
+	{
+		switch (m_gatewayInst->Status)
+		{
+		case GW_AP_CONFIG_MODE:
+			break;
+		case GW_BROKER_DNS_RESOLVED:
+			break;
+		case GW_BROKER_SOCKET_CLOSED:
+			break;
+		case GW_BROKER_SOCKET_OPEN:
+			break;
+		case GW_MQTT_CLIENT_CONNECTED:
+			break;
+		case GW_MQTT_CLIENT_DISCONNECTED:
+			break;
+		case GW_STARTING:
+			break;
+		case GW_WLAN_CONNECTED:
+			break;
+		case GW_WLAN_DISCONNECTED:
+			break;
+		case GW_ERROR:
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 #endif
