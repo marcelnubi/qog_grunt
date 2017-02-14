@@ -12,7 +12,6 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "qog_ovs_gateway.h"
 #include "qog_gateway_config.h"
 #include "qog_ovs_gateway_internal_types.h"
 
@@ -91,34 +90,7 @@ static void gw_init_tasks()
 			osPriorityNormal, 0, 128);
 	m_gateway.Tasks.DataSourceTask->Handle = osThreadCreate(
 			osThread(MQTTPublisherTask), &m_gateway);
-
-
-//	qog_ovs_gw_init();
-//	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
-//	{
-//		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] != NULL)
-//		{
-//			osThreadDef(DataSource,
-//					m_gateway.Tasks.DataSourceTaskGroup[tsk]->Task,
-//					osPriorityNormal, 0, 128);
-//			m_gateway.Tasks.DataSourceTaskGroup[tsk]->Handle = osThreadCreate(
-//					osThread(DataSource), &m_gateway.DataSourceQs);
-//		}
-//	}
 }
-
-//void qog_ovs_gw_register_data_source(qog_gateway_task * task)
-//{
-//	uint8_t tsk = 0;
-//	for (tsk = 0; tsk < MAX_DATA_SOURCE_TASKS; tsk++)
-//	{
-//		if (m_gateway.Tasks.DataSourceTaskGroup[tsk] == NULL)
-//		{
-//			m_gateway.Tasks.DataSourceTaskGroup[tsk] = task;
-//			break;
-//		}
-//	}
-//}
 
 void qog_ovs_run()
 {

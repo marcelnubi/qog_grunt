@@ -8,7 +8,6 @@
 #ifndef QOG_OVS_GATEWAY_INTERNAL_TYPES_H_
 #define QOG_OVS_GATEWAY_INTERNAL_TYPES_H_
 
-#include "qog_ovs_gateway.h"
 #include "qog_gateway_config.h"
 #include "OVS_Channel.pb.h"
 #include "OVS_ChannelNumberData.pb.h"
@@ -17,6 +16,51 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+
+#include <stdint.h>
+/*
+ * qog_ovs_gateway.h
+ *
+ *  Created on: Dec 1, 2016
+ *      Author: Marcel
+ */
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+
+typedef SemaphoreHandle_t qog_Mutex;
+typedef TaskFunction_t qog_Task;
+typedef QueueHandle_t qog_Queue;
+
+typedef struct
+{
+	uint32_t ChannelId;
+	uint32_t Timestamp;
+	double Value;
+} qog_DataSample;
+
+typedef struct
+{
+	qog_Queue DataAvailableQueue;
+	qog_Queue DataUsedQueue;
+} qog_DataSource_queues;
+
+typedef struct
+{
+	uint32_t Period;
+	uint8_t Parameters[32];
+} qog_DataSource_config;
+
+typedef struct Gateway Gateway;
+
+typedef struct
+{
+	qog_Task (*Task)(Gateway *gwInst);
+	uint32_t requestedHeap;
+	TaskHandle_t Handle;
+} qog_gateway_task;
 
 typedef struct
 {
@@ -29,6 +73,7 @@ typedef struct
 {
 	uint8_t HostName[32];
 	uint16_t HostPort;
+	uint32_t HostIp;
 	uint8_t Username[32];
 	uint8_t Password[32];
 } BrokerParams;
@@ -37,13 +82,17 @@ typedef Channel DataChannel;
 
 typedef enum
 {
-	GW_STARTING = 0,
+	GW_ERROR = 0,
+	GW_STARTING,
 	GW_AP_CONFIG_MODE,
+	GW_WLAN_DISCONNECTED,
 	GW_WLAN_CONNECTED,
 	GW_BROKER_DNS_RESOLVED,
 	GW_BROKER_SOCKET_OPEN,
+	GW_BROKER_SOCKET_CLOSED,
 	GW_MQTT_CLIENT_CONNECTED,
-	GW_ERROR
+	GW_MQTT_CLIENT_DISCONNECTED,
+
 } GatewayStatus;
 
 typedef struct Gateway Gateway;

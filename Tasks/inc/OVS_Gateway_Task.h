@@ -9,8 +9,6 @@
 #define TASKS_INC_OVS_GATEWAY_TASK_H_
 #include "qog_ovs_gateway_internal_types.h"
 
-
-
 extern qog_gateway_task WifiTaskDef;
 extern qog_gateway_task MQTTClientTaskDef;
 extern qog_gateway_task MQTTPublisherTaskDef;
