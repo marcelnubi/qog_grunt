@@ -50,6 +50,40 @@ Gateway * m_gatewayInst = 0;
  */
 static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
 {
+	switch (u8Msg)
+	{
+	/* Socket connected */
+	case SOCKET_MSG_CONNECT:
+	{
+//		tstrSocketConnectMsg *pstrConnect = (tstrSocketConnectMsg *) pvMsg;
+		Sockets[0].status = SocketConnected;
+		m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
+		break;
+	}
+		/* Message send */
+	case SOCKET_MSG_SEND:
+	{
+	}
+		break;
+		/* Message receive */
+	case SOCKET_MSG_RECV:
+	{
+		tstrSocketRecvMsg *pstrRecv = (tstrSocketRecvMsg *) pvMsg;
+		if (pstrRecv && pstrRecv->s16BufferSize > 0)
+		{
+			uint16_t idx = 0;
+			while (idx++ < pstrRecv->s16BufferSize)
+			{
+				xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
+						10);
+			}
+		}
+	}
+		break;
+
+	default:
+		break;
+	}
 }
 
 static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
@@ -62,33 +96,27 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
 				(tstrM2mWifiStateChanged *) pvMsg;
 		if (pstrWifiState->u8CurrState == M2M_WIFI_CONNECTED)
 		{
-//			printf("wifi_cb: M2M_WIFI_RESP_CON_STATE_CHANGED: CONNECTED\r\n");
 			m2m_wifi_request_dhcp_client();
 		}
 		else if (pstrWifiState->u8CurrState == M2M_WIFI_DISCONNECTED)
 		{
-//			printf("wifi_cb: M2M_WIFI_RESP_CON_STATE_CHANGED: DISCONNECTED\r\n");
-//			gbConnectedWifi = false;
-//			gbHostIpByName = false;
-			m2m_wifi_connect((char *) m_gatewayInst->WLANConnection.WLAN_SSID,
-					sizeof(m_gatewayInst->WLANConnection.WLAN_SSID),
-					m_gatewayInst->WLANConnection.WLAN_AUTH,
-					(char *) m_gatewayInst->WLANConnection.WLAN_PSK,
-					M2M_WIFI_CH_ALL);
+			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 		}
 
-		break;
 	}
-
+		break;
 	case M2M_WIFI_REQ_DHCP_CONF:
 	{
-		//	gbConnectedWifi = true;
 		m_gatewayInst->Status = GW_WLAN_CONNECTED;
 		/* Obtain the IP Address by network name */
-		gethostbyname((uint8_t *) m_gatewayInst->BrokerParams.HostName);
-		break;
-	}
 
+	}
+		break;
+	case M2M_WIFI_RESP_IP_CONFLICT:
+	{
+		m2m_wifi_request_dhcp_client();
+	}
+		break;
 	default:
 	{
 		break;
@@ -104,10 +132,93 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
  *
  * \return None.
  */
-static void resolve_cb(uint8_t *hostName, uint32_t hostIp)
+static void dns_resolve_cb(uint8_t *hostName, uint32_t hostIp)
 {
-	resolvedHostIp = hostIp;
+	m_gatewayInst->BrokerParams.HostIp = hostIp;
 	m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
+}
+
+static void GatewaySocketOpen()
+{
+	close(Sockets[0].number);
+	socketDeinit();
+	socketInit();
+	Sockets[0].status = SocketClosed;
+	m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
+
+	while (Sockets[0].status != SocketConnected)
+	{
+		switch (Sockets[0].status)
+		{
+		case SocketClosed:
+		{
+			struct sockaddr_in addr_in;
+			addr_in.sin_family = AF_INET;
+			addr_in.sin_port = m_gatewayInst->BrokerParams.HostPort;
+			addr_in.sin_addr.s_addr = m_gatewayInst->BrokerParams.HostIp;
+			if (connect(Sockets[0].number, (struct sockaddr *) &addr_in,
+					sizeof(struct sockaddr_in)) != SOCK_ERR_NO_ERROR)
+				Sockets[0].status = SocketWaiting;
+		}
+			break;
+		case SocketWaiting:
+		{
+			vTaskDelay(100);
+			m2m_wifi_handle_events(NULL);
+		}
+			break;
+		case SocketError:
+		{
+			//TODO Tratar erro de socket, decidir se continua ou se para
+			Sockets[0].status = SocketClosed;
+		}
+		}
+		//send tx queue byte
+	}
+}
+
+static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
+		GatewayStatus status)
+{
+	while (m_gatewayInst->Status != status)
+	{
+		vTaskDelay(100);
+		m2m_wifi_handle_events(NULL);
+
+		if (m_gatewayInst->Status == GW_ERROR)
+			break;
+	}
+}
+
+static void GatewayWLANConnect(Gateway* m_gatewayInst)
+{
+	m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
+
+	m2m_wifi_connect((char*) m_gatewayInst->WLANConnection.WLAN_SSID,
+			strlen((char*) m_gatewayInst->WLANConnection.WLAN_SSID),
+			(tenuM2mSecType) m_gatewayInst->WLANConnection.WLAN_AUTH,
+			(char*) m_gatewayInst->WLANConnection.WLAN_PSK, M2M_WIFI_CH_ALL);
+	GatewayWaitForStatusChange(m_gatewayInst, GW_WLAN_CONNECTED);
+}
+
+static void GatewayResolveHost(Gateway* m_gatewayInst)
+{
+	if (m_gatewayInst->Status != GW_WLAN_CONNECTED)
+		return;
+	gethostbyname((uint8_t*) m_gatewayInst->BrokerParams.HostName);
+	GatewayWaitForStatusChange(m_gatewayInst, GW_BROKER_DNS_RESOLVED);
+}
+
+void GatewaySocketSend(Gateway* m_gatewayInst)
+{
+	uint8_t sendData = 0;
+	xQueueReceive(m_gatewayInst->SocketTxQueue, sendData, 10);
+	int32_t rc = 0;
+	if (!send(Sockets[0].number, &sendData, 1, 0))
+		rc = 1;
+	else
+		rc = -1;
+	m2m_wifi_handle_events(NULL);
 }
 
 qog_Task WifiTaskImpl(Gateway * gwInst)
@@ -126,31 +237,18 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 	if (M2M_SUCCESS != ret)
 	{
 		//TODO Debug port out
-		if (m_gatewayInst->Status == GW_BROKER_DNS_RESOLVED)
-			while (1)
-			{
-				switch (Sockets[0].status)
-				{
-				case SocketClosed:
-				{
-					struct sockaddr_in addr_in;
-					addr_in.sin_family = AF_INET;
-					addr_in.sin_port = gwInst->BrokerParams.HostPort;
-					addr_in.sin_addr.s_addr = resolvedHostIp;
-//					if (connect(Sockets[0].number, (struct sockaddr *) &addr_in,
-//							sizeof(struct sockaddr_in)) != SOCK_ERR_NO_ERROR)
-//					{
-//						Sockets[0].status  =
-//					}
-				}
-
-				}
-				//send tx queue byte
-			}
 	}
+	registerSocketCallback(socket_cb, dns_resolve_cb);
+
+	//TODO get WLAN info -> Provisioning or Local Storage
+
+	GatewayWLANConnect(m_gatewayInst);
+	GatewayResolveHost(m_gatewayInst);
+	if (m_gatewayInst->Status == GW_BROKER_DNS_RESOLVED)
+		GatewaySocketOpen(Sockets, resolvedHostIp, gwInst);
+	GatewaySocketSend(m_gatewayInst);
 //
 //	socketInit();
-//	registerSocketCallback(socket_cb, resolve_cb);
 //	/* Connect to router. */
 //	m2m_wifi_connect((char *) QogniBrokerParams.WLAN_SSID, strlen((char*)QogniBrokerParams.WLAN_SSID),
 //			(tenuM2mSecType)QogniBrokerParams.WLAN_AUTH, (char *) QogniBrokerParams.WLAN_PSK, M2M_WIFI_CH_ALL);

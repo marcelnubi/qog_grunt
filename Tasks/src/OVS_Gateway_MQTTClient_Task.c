@@ -14,17 +14,16 @@
 #define MQTT_BUFFER_SIZE 512
 
 //-------- Gateway Interface - START
-#include "qog_ovs_gateway.h"
 #include "qog_ovs_gateway_internal_types.h"
 
 #define WIFI_TASK_HEAP 0x200
 
-static qog_Task MQTTClientTaskImpl(void * gwInst);
+static qog_Task MQTTClientTaskImpl(Gateway * gwInst);
 
 qog_gateway_task MQTTClientTaskDef =
 { &MQTTClientTaskImpl, WIFI_TASK_HEAP, NULL };
 
-static qog_Task MQTTPublisherTaskImpl(void * gwInst);
+static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst);
 
 qog_gateway_task MQTTPublisherTaskDef =
 { &MQTTPublisherTaskImpl, WIFI_TASK_HEAP, NULL };
@@ -107,7 +106,7 @@ void FreeRTOS_disconnect(Network* n)
 //	FreeRTOS_closesocket(n->my_socket);
 }
 
-static qog_Task MQTTClientTaskImpl(void * gwInst)
+static qog_Task MQTTClientTaskImpl(Gateway * gwInst)
 {
 	Gateway* gw = (Gateway*)gwInst;
 	network.SockRxQueue = &gw->SocketRxQueue;
@@ -116,7 +115,7 @@ static qog_Task MQTTClientTaskImpl(void * gwInst)
 	MQTTClientInit(&client,&network,MQTT_TIMEOUT_MS,txBuf,MQTT_BUFFER_SIZE,rxBuf,MQTT_BUFFER_SIZE);
 }
 
-static qog_Task MQTTPublisherTaskImpl(void * gwInst)
+static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 {
 	Gateway* gw = (Gateway*)gwInst;
 	network.SockRxQueue = &gw->SocketRxQueue;
