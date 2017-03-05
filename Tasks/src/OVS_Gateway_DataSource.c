@@ -8,16 +8,17 @@
 #include "qog_ovs_gateway_internal_types.h"
 #include "DataSourceAPI.h"
 
-void DataSourceInit()
+void __attribute__((weak)) DataSourceInit()
 {
 	uint32_t asd = 123;
 	asd++;
 	asd = 12 + asd;
 }
-void DataSourceConfig(uint8_t channelNumber, uint8_t * configBytes)
+void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
+		uint8_t * configBytes)
 {
 }
-double DataSourceNumberRead(uint8_t channelNumber)
+double __attribute__((weak)) DataSourceNumberRead(uint8_t channelNumber)
 {
 	return 42;
 }
