@@ -68,28 +68,27 @@ static void gw_init_shared_queues()
 
 static void gw_init_tasks()
 {
-//	uint8_t tsk = 0;
 	gw_init_shared_queues();
 
-	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityNormal, 0,
-			128);
+	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityNormal, 1,
+			m_gateway.Tasks.WifiTask->requestedHeap);
 	m_gateway.Tasks.WifiTask->Handle = osThreadCreate(osThread(WifiTask),
 			&m_gateway);
 
 	osThreadDef(MQTTClient, m_gateway.Tasks.MQTTClientTask->Task,
-			osPriorityNormal, 0, 128);
+			osPriorityNormal, 1, 128);
 	m_gateway.Tasks.MQTTClientTask->Handle = osThreadCreate(
 			osThread(MQTTClient), &m_gateway);
 
 	osThreadDef(MQTTPublisherTask, m_gateway.Tasks.MQTTPublisherTask->Task,
-			osPriorityNormal, 0, 128);
+			osPriorityNormal, 1, 128);
 	m_gateway.Tasks.MQTTPublisherTask->Handle = osThreadCreate(
 			osThread(MQTTPublisherTask), &m_gateway);
 
 	osThreadDef(DataSourceTask, m_gateway.Tasks.DataSourceTask->Task,
-			osPriorityNormal, 0, 128);
+			osPriorityNormal, 1, 128);
 	m_gateway.Tasks.DataSourceTask->Handle = osThreadCreate(
-			osThread(MQTTPublisherTask), &m_gateway);
+			osThread(DataSourceTask), &m_gateway);
 }
 
 void qog_ovs_run()

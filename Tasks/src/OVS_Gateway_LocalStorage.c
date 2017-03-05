@@ -16,7 +16,7 @@ static qog_Task LocalStorageTaskImpl(Gateway * gwInst)
 {
 	for (;;)
 	{
-		osDelay(1);
+		osDelay(1000);
 	}
 	return 0;
 }

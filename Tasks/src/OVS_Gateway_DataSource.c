@@ -8,6 +8,20 @@
 #include "qog_ovs_gateway_internal_types.h"
 #include "DataSourceAPI.h"
 
+void DataSourceInit()
+{
+	uint32_t asd = 123;
+	asd++;
+	asd = 12 + asd;
+}
+void DataSourceConfig(uint8_t channelNumber, uint8_t * configBytes)
+{
+}
+double DataSourceNumberRead(uint8_t channelNumber)
+{
+	return 42;
+}
+
 static Gateway * m_gateway;
 
 static double currentVal = 0;
@@ -36,18 +50,16 @@ static qog_Task DataSourceTaskImpl(Gateway * gwInst);
 qog_gateway_task DataSourceTaskDef =
 { &DataSourceTaskImpl, 0x200, NULL };
 
-static qog_Task DataSourceTaskImpl(Gateway * gwInst)
+qog_Task DataSourceTaskImpl(Gateway * gwInst)
 {
 	m_gateway = gwInst;
 	TickType_t xLastWakeTime, currentTick;
-	const TickType_t xFrequency = portTICK_PERIOD_MS*1000; //1000ms wait
+	const TickType_t xFrequency = portTICK_PERIOD_MS * 1000; //1000ms wait
 
 	// Initialise the xLastWakeTime variable with the current time.
 	DataSourceInit();
 
 	//Initialise Channels and Measurement
-	xLastWakeTime = xTaskGetTickCount();
-
 	MeasurementSchedule.Channels = gwInst->DataChannels;
 	for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++)
 	{

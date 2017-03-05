@@ -8,6 +8,7 @@
 #if defined(GW_WIFI_TASK_ATWINC_1500)
 
 #include "qog_gateway_error_types.h"
+#include "qog_ovs_gateway_internal_types.h"
 #include "../inc/OVS_Gateway_Task.h"
 #include "driver/include/m2m_wifi.h"
 #include "socket/include/socket.h"
@@ -239,75 +240,76 @@ void GatewaySocketSend(Gateway* m_gatewayInst)
 
 qog_Task WifiTaskImpl(Gateway * gwInst)
 {
-	tstrWifiInitParam param;
-	int8_t ret;
-	Sockets[0].number = socket(AF_INET, SOCK_STREAM, 0);
-	Sockets[0].status = SocketClosed;
-	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
-
-	nm_bsp_init();
-	/* USER CODE BEGIN 2 */
-	/* Initialize Wi-Fi driver with data and status callbacks. */
-	param.pfAppWifiCb = wifi_cb;
-	ret = m2m_wifi_init(&param);
-	if (M2M_SUCCESS != ret)
-	{
-		//TODO Debug port out
-	}
-	registerSocketCallback(socket_cb, dns_resolve_cb);
-
-	//TODO get WLAN info -> Provisioning or Local Storage
-
-	GatewayWLANConnect(m_gatewayInst);
-	GatewayResolveHost(m_gatewayInst);
-//	if (m_gatewayInst->Status == GW_BROKER_DNS_RESOLVED)
-//		GatewaySocketOpen(Sockets, resolvedHostIp, gwInst);
-	GatewaySocketSend(m_gatewayInst);
-	TickType_t xLastWakeTime = xTaskGetTickCount();
-	const TickType_t xFrequency = portTICK_PERIOD_MS * TASK_PERIOD_MS_WIFI;
+//	tstrWifiInitParam param;
+//	int8_t ret;
+//	Sockets[0].number = socket(AF_INET, SOCK_STREAM, 0);
+//	Sockets[0].status = SocketClosed;
+//	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
+//
+//	nm_bsp_init();
+//	/* USER CODE BEGIN 2 */
+//	/* Initialize Wi-Fi driver with data and status callbacks. */
+//	param.pfAppWifiCb = wifi_cb;
+//	ret = m2m_wifi_init(&param);
+//	if (M2M_SUCCESS != ret)
+//	{
+//		//TODO Debug port out
+//	}
+//	registerSocketCallback(socket_cb, dns_resolve_cb);
+//
+//	//TODO get WLAN info -> Provisioning or Local Storage
+//
+//	GatewayWLANConnect(m_gatewayInst);
+//	GatewayResolveHost(m_gatewayInst);
+////	if (m_gatewayInst->Status == GW_BROKER_DNS_RESOLVED)
+////		GatewaySocketOpen(Sockets, resolvedHostIp, gwInst);
+//	GatewaySocketSend(m_gatewayInst);
+//	TickType_t xLastWakeTime = xTaskGetTickCount();
+//	const TickType_t xFrequency = portTICK_PERIOD_MS * TASK_PERIOD_MS_WIFI;
 	for (;;)
 	{
-		vTaskDelayUntil(&xLastWakeTime,xFrequency);
-		switch (m_gatewayInst->Status)
-		{
-		case GW_STARTING:
-			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
-			break;
-		case GW_AP_CONFIG_MODE:
-			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
-			break;
-		case GW_BROKER_DNS_RESOLVED:
-			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
-			break;
-		case GW_BROKER_SOCKET_CLOSED:
-			if (GatewaySocketOpen(TIMEOUT_SOCKET_OPEN) == GW_e_OK)
-				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
-			//TODO retry counter
-			break;
-		case GW_BROKER_SOCKET_OPEN:
-			m2m_wifi_handle_events(NULL);
-			break;
-		case GW_MQTT_CLIENT_CONNECTED:
-			break;
-		case GW_MQTT_CLIENT_DISCONNECTED:
-			break;
-		case GW_WLAN_CONNECTED:
-			//TODO update RTC via NTP UDP request
-			//TODO retry counter
-			if (GatewayResolveHost(m_gatewayInst) == GW_e_OK)
-				m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
-			//TODO retry counter
-			break;
-		case GW_WLAN_DISCONNECTED:
-			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK)
-				m_gatewayInst->Status = GW_WLAN_CONNECTED;
-			//TODO retry counter
-			break;
-		case GW_ERROR:
-			break;
-		default:
-			break;
-		}
+//		vTaskDelayUntil(&xLastWakeTime,xFrequency);
+		osDelay(1000);
+//		switch (m_gatewayInst->Status)
+//		{
+//		case GW_STARTING:
+//			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
+//			break;
+//		case GW_AP_CONFIG_MODE:
+//			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
+//			break;
+//		case GW_BROKER_DNS_RESOLVED:
+//			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
+//			break;
+//		case GW_BROKER_SOCKET_CLOSED:
+//			if (GatewaySocketOpen(TIMEOUT_SOCKET_OPEN) == GW_e_OK)
+//				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
+//			//TODO retry counter
+//			break;
+//		case GW_BROKER_SOCKET_OPEN:
+//			m2m_wifi_handle_events(NULL);
+//			break;
+//		case GW_MQTT_CLIENT_CONNECTED:
+//			break;
+//		case GW_MQTT_CLIENT_DISCONNECTED:
+//			break;
+//		case GW_WLAN_CONNECTED:
+//			//TODO update RTC via NTP UDP request
+//			//TODO retry counter
+//			if (GatewayResolveHost(m_gatewayInst) == GW_e_OK)
+//				m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
+//			//TODO retry counter
+//			break;
+//		case GW_WLAN_DISCONNECTED:
+//			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK)
+//				m_gatewayInst->Status = GW_WLAN_CONNECTED;
+//			//TODO retry counter
+//			break;
+//		case GW_ERROR:
+//			break;
+//		default:
+//			break;
+//		}
 	}
 	return 0;
 }
