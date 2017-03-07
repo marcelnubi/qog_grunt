@@ -240,17 +240,17 @@ void GatewaySocketSend(Gateway* m_gatewayInst)
 
 qog_Task WifiTaskImpl(Gateway * gwInst)
 {
-//	tstrWifiInitParam param;
-//	int8_t ret;
-//	Sockets[0].number = socket(AF_INET, SOCK_STREAM, 0);
-//	Sockets[0].status = SocketClosed;
-//	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
-//
-//	nm_bsp_init();
-//	/* USER CODE BEGIN 2 */
-//	/* Initialize Wi-Fi driver with data and status callbacks. */
-//	param.pfAppWifiCb = wifi_cb;
-//	ret = m2m_wifi_init(&param);
+	tstrWifiInitParam param;
+	int8_t ret;
+	Sockets[0].number = socket(AF_INET, SOCK_STREAM, 0);
+	Sockets[0].status = SocketClosed;
+	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
+
+	nm_bsp_init();
+	/* USER CODE BEGIN 2 */
+	/* Initialize Wi-Fi driver with data and status callbacks. */
+	param.pfAppWifiCb = wifi_cb;
+	ret = m2m_wifi_init(&param);
 //	if (M2M_SUCCESS != ret)
 //	{
 //		//TODO Debug port out
