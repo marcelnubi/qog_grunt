@@ -247,14 +247,15 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
 
 	nm_bsp_init();
+	osDelay(100);
 	/* USER CODE BEGIN 2 */
 	/* Initialize Wi-Fi driver with data and status callbacks. */
 	param.pfAppWifiCb = wifi_cb;
 	ret = m2m_wifi_init(&param);
-//	if (M2M_SUCCESS != ret)
-//	{
-//		//TODO Debug port out
-//	}
+	if (M2M_SUCCESS != ret)
+	{
+		//TODO Debug port out
+	}
 //	registerSocketCallback(socket_cb, dns_resolve_cb);
 //
 //	//TODO get WLAN info -> Provisioning or Local Storage
