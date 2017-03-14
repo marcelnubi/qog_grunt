@@ -7,6 +7,7 @@
 
 #if defined(GW_WIFI_TASK_ATWINC_1500)
 
+#include "FreeRTOS.h"
 #include "qog_gateway_error_types.h"
 #include "qog_ovs_gateway_internal_types.h"
 #include "../inc/OVS_Gateway_Task.h"
@@ -113,6 +114,7 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
 		break;
 	case M2M_WIFI_REQ_DHCP_CONF:
 	{
+//		tstrM2MIPConfig *conf = (tstrM2MIPConfig*) pvMsg;
 		m_gatewayInst->Status = GW_WLAN_CONNECTED;
 		/* Obtain the IP Address by network name */
 
@@ -144,11 +146,9 @@ static void dns_resolve_cb(uint8_t *hostName, uint32_t hostIp)
 	m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
 }
 
-static qog_gw_error_t GatewaySocketOpen(uint32_t timeout)
+static qog_gw_error_t GatewaySocketOpen(uint32_t timeout)//TODO socket como argumento
 {
 	close(Sockets[0].number);
-	socketDeinit();
-	socketInit();
 	Sockets[0].status = SocketClosed;
 	m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 
@@ -162,6 +162,7 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout)
 			addr_in.sin_family = AF_INET;
 			addr_in.sin_port = m_gatewayInst->BrokerParams.HostPort;
 			addr_in.sin_addr.s_addr = m_gatewayInst->BrokerParams.HostIp;
+			Sockets[0].number = socket(AF_INET, SOCK_STREAM, 0);
 			if (connect(Sockets[0].number, (struct sockaddr *) &addr_in,
 					sizeof(struct sockaddr_in)) != SOCK_ERR_NO_ERROR)
 				Sockets[0].status = SocketWaiting;
@@ -169,8 +170,9 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout)
 			break;
 		case SocketWaiting:
 		{
-			vTaskDelay(100);
+			vTaskDelay(TASK_PERIOD_MS_WIFI);
 			m2m_wifi_handle_events(NULL);
+			//TODO retry timeout
 		}
 			break;
 		case SocketError:
@@ -186,13 +188,25 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout)
 }
 
 static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
-		GatewayStatus status, uint32_t timeout)
+		GatewayStatus status, TickType_t timeout, TickType_t pollingTime)
 {
-	while (m_gatewayInst->Status != status)
+	TickType_t xTicksToWait = timeout;
+	TimeOut_t xTimeOut;
+
+	vTaskSetTimeOutState(&xTimeOut);
+
+	while (m_gatewayInst->Status != status) //TODO Timeout
 	{
-		vTaskDelay(100);
+		vTaskDelay(pollingTime);
 		m2m_wifi_handle_events(NULL);
 
+		if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE)
+		{
+			/* Timed out before the wanted number of bytes were available, exit the
+			 loop. */
+			m_gatewayInst->Status = GW_ERROR;
+			break;
+		}
 		if (m_gatewayInst->Status == GW_ERROR)
 			break;
 	}
@@ -207,7 +221,7 @@ static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst)
 			(tenuM2mSecType) m_gatewayInst->WLANConnection.WLAN_AUTH,
 			(char*) m_gatewayInst->WLANConnection.WLAN_PSK, M2M_WIFI_CH_ALL);
 	GatewayWaitForStatusChange(m_gatewayInst, GW_WLAN_CONNECTED,
-			TIMEOUT_WIFI_WLAN_CONNECT);
+			TIMEOUT_WIFI_WLAN_CONNECT, TASK_PERIOD_MS_WIFI);
 	if (m_gatewayInst->Status != GW_WLAN_CONNECTED)
 		return GW_e_WLAN_ERROR;
 	return GW_e_OK;
@@ -220,7 +234,7 @@ static qog_gw_error_t GatewayResolveHost(Gateway* m_gatewayInst)
 
 	gethostbyname((uint8_t*) m_gatewayInst->BrokerParams.HostName);
 	GatewayWaitForStatusChange(m_gatewayInst, GW_BROKER_DNS_RESOLVED,
-			TIMEOUT_WIFI_RESOLVE_HOST);
+			TIMEOUT_WIFI_RESOLVE_HOST * 3, TASK_PERIOD_MS_WIFI);
 	if (m_gatewayInst->Status != GW_BROKER_DNS_RESOLVED)
 		return GW_e_HOST_ERROR;
 	return GW_e_OK;
@@ -240,6 +254,8 @@ void GatewaySocketSend(Gateway* m_gatewayInst)
 
 qog_Task WifiTaskImpl(Gateway * gwInst)
 {
+	m_gatewayInst = gwInst;
+
 	tstrWifiInitParam param;
 	int8_t ret;
 	Sockets[0].number = socket(AF_INET, SOCK_STREAM, 0);
@@ -247,7 +263,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
 
 	nm_bsp_init();
-	osDelay(100);
+//	osDelay(100);
 	/* USER CODE BEGIN 2 */
 	/* Initialize Wi-Fi driver with data and status callbacks. */
 	param.pfAppWifiCb = wifi_cb;
@@ -256,61 +272,58 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 	{
 		//TODO Debug port out
 	}
-//	registerSocketCallback(socket_cb, dns_resolve_cb);
-//
-//	//TODO get WLAN info -> Provisioning or Local Storage
-//
-//	GatewayWLANConnect(m_gatewayInst);
-//	GatewayResolveHost(m_gatewayInst);
-////	if (m_gatewayInst->Status == GW_BROKER_DNS_RESOLVED)
-////		GatewaySocketOpen(Sockets, resolvedHostIp, gwInst);
-//	GatewaySocketSend(m_gatewayInst);
-//	TickType_t xLastWakeTime = xTaskGetTickCount();
-//	const TickType_t xFrequency = portTICK_PERIOD_MS * TASK_PERIOD_MS_WIFI;
+	socketInit();
+	registerSocketCallback(socket_cb, dns_resolve_cb);
+
 	for (;;)
 	{
-//		vTaskDelayUntil(&xLastWakeTime,xFrequency);
-		osDelay(1000);
-//		switch (m_gatewayInst->Status)
-//		{
-//		case GW_STARTING:
-//			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
-//			break;
+		vTaskDelay(TASK_PERIOD_MS_WIFI);
+		switch (m_gatewayInst->Status)
+		{
+		case GW_STARTING:
+			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
+			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
+			break;
 //		case GW_AP_CONFIG_MODE:
 //			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
 //			break;
-//		case GW_BROKER_DNS_RESOLVED:
-//			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
-//			break;
-//		case GW_BROKER_SOCKET_CLOSED:
-//			if (GatewaySocketOpen(TIMEOUT_SOCKET_OPEN) == GW_e_OK)
-//				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
-//			//TODO retry counter
-//			break;
-//		case GW_BROKER_SOCKET_OPEN:
-//			m2m_wifi_handle_events(NULL);
-//			break;
+		case GW_BROKER_DNS_RESOLVED:
+			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
+			break;
+		case GW_BROKER_SOCKET_CLOSED:
+			if (GatewaySocketOpen(TIMEOUT_SOCKET_OPEN) == GW_e_OK)
+				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
+			//TODO retry counter
+			break;
+		case GW_BROKER_SOCKET_OPEN:
+			m2m_wifi_handle_events(NULL);
+			break;
 //		case GW_MQTT_CLIENT_CONNECTED:
 //			break;
 //		case GW_MQTT_CLIENT_DISCONNECTED:
 //			break;
-//		case GW_WLAN_CONNECTED:
-//			//TODO update RTC via NTP UDP request
-//			//TODO retry counter
-//			if (GatewayResolveHost(m_gatewayInst) == GW_e_OK)
-//				m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
-//			//TODO retry counter
-//			break;
-//		case GW_WLAN_DISCONNECTED:
-//			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK)
-//				m_gatewayInst->Status = GW_WLAN_CONNECTED;
-//			//TODO retry counter
-//			break;
-//		case GW_ERROR:
-//			break;
+		case GW_WLAN_CONNECTED:
+			//TODO update RTC via NTP UDP request
+			//TODO retry counter
+			if (GatewayResolveHost(m_gatewayInst) == GW_e_OK)
+				m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
+			//TODO retry counter
+			break;
+		case GW_WLAN_DISCONNECTED:
+			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK)
+				m_gatewayInst->Status = GW_WLAN_CONNECTED;
+			//TODO retry counter
+			break;
+		case GW_ERROR:
+			nm_bsp_init();
+			ret = m2m_wifi_init(&param);
+			socketInit();
+			registerSocketCallback(socket_cb, dns_resolve_cb);
+			m_gatewayInst->Status = GW_STARTING;
+			break;
 //		default:
 //			break;
-//		}
+		}
 	}
 	return 0;
 }
