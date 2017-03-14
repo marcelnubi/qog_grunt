@@ -78,16 +78,19 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst)
 	for (;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		currentTick = xTaskGetTickCount();
+
+		if (m_gateway->TimeStamp)
+			m_gateway->TimeStamp++;
+
 		for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++)
 		{
 			if (MeasurementSchedule.Channels[idx].Enabled == true)
 			{
-				if (MeasurementSchedule.NextMeasurement[idx] < currentTick)
+				if (MeasurementSchedule.NextMeasurement[idx] <= xLastWakeTime)
 				{
 					currentVal = DataSourceNumberRead(idx + 1);
-					PushNumberData(currentVal, idx + 1, 42);
-					MeasurementSchedule.NextMeasurement[idx] = currentTick
+					PushNumberData(currentVal, idx + 1, m_gateway->TimeStamp);
+					MeasurementSchedule.NextMeasurement[idx] = xLastWakeTime
 							+ MeasurementSchedule.Channels[idx].Period
 									* configTICK_RATE_HZ;
 				}

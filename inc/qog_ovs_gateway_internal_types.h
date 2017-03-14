@@ -91,8 +91,7 @@ typedef enum
 	GW_BROKER_SOCKET_OPEN,
 	GW_BROKER_SOCKET_CLOSED,
 	GW_MQTT_CLIENT_CONNECTED,
-	GW_MQTT_CLIENT_DISCONNECTED,
-
+	GW_MQTT_CLIENT_DISCONNECTED
 } GatewayStatus;
 
 typedef struct Gateway Gateway;
@@ -104,6 +103,7 @@ typedef struct
 	qog_gateway_task * MQTTPublisherTask;
 	qog_gateway_task * DataSourceTask;
 	qog_gateway_task * LocalStorageTask;
+	qog_gateway_task * SystemTimeTask;
 } GatewayTasks;
 
 struct Gateway
@@ -119,6 +119,7 @@ struct Gateway
 	ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
 	qog_Mutex MQTTMutex;
 	qog_Mutex LocalStorageMutex;
+	uint32_t TimeStamp;
 };
 
 #endif /* QOG_OVS_GATEWAY_INTERNAL_TYPES_H_ */
