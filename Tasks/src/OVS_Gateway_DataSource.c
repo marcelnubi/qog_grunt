@@ -27,7 +27,7 @@ static Gateway * m_gateway;
 
 static double currentVal = 0;
 
-static void PushNumberData(double val, uint8_t channel, uint32_t timestamp)
+static void PushNumberData(double val, uint32_t channel, uint32_t timestamp)
 {
 	uint8_t avail;
 	xQueueReceive(m_gateway->DataSourceQs.DataAvailableQueue, &avail, 10);
@@ -54,7 +54,7 @@ qog_gateway_task DataSourceTaskDef =
 qog_Task DataSourceTaskImpl(Gateway * gwInst)
 {
 	m_gateway = gwInst;
-	TickType_t xLastWakeTime, currentTick;
+	TickType_t xLastWakeTime;
 	const TickType_t xFrequency = portTICK_PERIOD_MS * 1000; //1000ms wait
 
 	// Initialise the xLastWakeTime variable with the current time.
@@ -62,37 +62,29 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst)
 
 	//Initialise Channels and Measurement
 	MeasurementSchedule.Channels = gwInst->DataChannels;
-	for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++)
-	{
-		if (MeasurementSchedule.Channels[idx].Enabled == true)
-		{
-			currentVal = DataSourceNumberRead(idx + 1);
-			PushNumberData(currentVal, idx + 1, 42);
-			MeasurementSchedule.NextMeasurement[idx] = xLastWakeTime
-					+ MeasurementSchedule.Channels[idx].Period
-							* configTICK_RATE_HZ;
-		}
-	}
-
 	xLastWakeTime = xTaskGetTickCount();
+
 	for (;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
+		uint32_t thisTime = 0;
 
 		if (m_gateway->TimeStamp)
+		{
 			m_gateway->TimeStamp++;
-
+			thisTime = m_gateway->TimeStamp;
+		}
 		for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++)
 		{
 			if (MeasurementSchedule.Channels[idx].Enabled == true)
 			{
-				if (MeasurementSchedule.NextMeasurement[idx] <= xLastWakeTime)
+				if (MeasurementSchedule.NextMeasurement[idx] <= thisTime)
 				{
 					currentVal = DataSourceNumberRead(idx + 1);
-					PushNumberData(currentVal, idx + 1, m_gateway->TimeStamp);
-					MeasurementSchedule.NextMeasurement[idx] = xLastWakeTime
-							+ MeasurementSchedule.Channels[idx].Period
-									* configTICK_RATE_HZ;
+					PushNumberData(currentVal,
+							MeasurementSchedule.Channels[idx].Id, thisTime);
+					MeasurementSchedule.NextMeasurement[idx] = thisTime
+							+ MeasurementSchedule.Channels[idx].Period;
 				}
 			}
 		}
