@@ -15,6 +15,8 @@
 #include "qog_gateway_config.h"
 #include "qog_ovs_gateway_internal_types.h"
 
+#include "winc_1500_lib/driver/include/m2m_wifi.h"
+
 #include "Overseer_Connection.h"
 #include "OVS_ChannelNumberData.pb.h"
 #include "OVS_Channel.pb.h"
@@ -25,7 +27,11 @@ static Gateway m_gateway;
 
 static void gw_init_gateway()
 {
+	m_gateway.Status = GW_STARTING;
 	//TODO Retrive WLAN config
+	sprintf((char *) m_gateway.WLANConnection.WLAN_SSID, "NuggetL");
+	sprintf((char *) m_gateway.WLANConnection.WLAN_PSK, "Furmiga1L");
+	m_gateway.WLANConnection.WLAN_AUTH = M2M_WIFI_SEC_WPA_PSK;
 
 	//TODO Retrieve MQTT Broker config
 	sprintf((char*) m_gateway.BrokerParams.HostName, OVS_BROKER_HOST);
