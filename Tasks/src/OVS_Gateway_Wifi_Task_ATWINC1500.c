@@ -340,7 +340,7 @@ static qog_gw_error_t GatewayGetSystemTimeNTP(TickType_t timeout,
 	/* Set NTP server socket address structure. */
 	addr.sin_family = AF_INET;
 	addr.sin_port = _htons(NTP_SERVER_PORT);
-	addr.sin_addr.s_addr = _htonl(0xC8A00008);
+	addr.sin_addr.s_addr = _htonl(NTP_SERVER_IP);
 	bind(Sockets[NTP_SOCKET].number, (struct sockaddr*) &addr,
 			sizeof(struct sockaddr_in));
 	/*Send an NTP time query to the NTP server*/
