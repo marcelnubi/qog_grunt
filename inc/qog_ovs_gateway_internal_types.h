@@ -82,7 +82,7 @@ typedef Channel DataChannel;
 
 typedef enum
 {
-	GW_ERROR = 0,
+	GW_ERROR = -1,
 	GW_STARTING,
 	GW_AP_CONFIG_MODE,
 	GW_WLAN_DISCONNECTED,
