@@ -10,12 +10,9 @@
 
 #include "qog_gateway_config.h"
 #include "OVS_Channel.pb.h"
+#include "pb_encode.h"
+#include "pb_decode.h"
 #include "OVS_ChannelNumberData.pb.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "semphr.h"
 
 #include <stdint.h>
 /*
@@ -33,6 +30,7 @@
 typedef SemaphoreHandle_t qog_Mutex;
 typedef TaskFunction_t qog_Task;
 typedef QueueHandle_t qog_Queue;
+typedef uint32_t GatewayId;
 
 typedef struct
 {
@@ -108,6 +106,7 @@ typedef struct
 
 struct Gateway
 {
+	GatewayId Id;
 	WLANConnectionParams WLANConnection;
 	BrokerParams BrokerParams;
 	DataChannel DataChannels[MAX_DATA_CHANNELS];
