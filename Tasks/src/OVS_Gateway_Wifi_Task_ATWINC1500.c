@@ -92,12 +92,14 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
 		else
 		{
 			//TODO socket error
+			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
 		break;
 	}
 		/* Message send */
 	case SOCKET_MSG_SEND:
 	{
+		int16_t bytesSent = *(int16_t *) pvMsg;
 	}
 		break;
 		/* Message receive */
@@ -139,16 +141,21 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
 		tstrSocketRecvMsg *pstrRecv = (tstrSocketRecvMsg *) pvMsg;
 		if (pstrRecv && pstrRecv->s16BufferSize > 0)
 		{
-			if ((pstrRecv->strRemoteAddr.sin_addr.s_addr
-					== m_gatewayInst->BrokerParams.HostIp))
+//			if ((pstrRecv->strRemoteAddr.sin_addr.s_addr
+//					== m_gatewayInst->BrokerParams.HostIp)) //TODO How to check remote address match with Broker config?
+//			{
+			uint16_t idx = 0;
+			while (idx++ < pstrRecv->s16BufferSize)
 			{
-				uint16_t idx = 0;
-				while (idx++ < pstrRecv->s16BufferSize)
-				{
-					xQueueSend(m_gatewayInst->SocketRxQueue,
-							pstrRecv->pu8Buffer++, 10);
-				}
+				xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
+						0);
 			}
+//			}
+		}
+		else
+		{
+			close(Sockets[MQTT_SOCKET].number);
+			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
 		break;
 
@@ -431,7 +438,27 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 			//TODO retry counter
 			break;
 		case GW_BROKER_SOCKET_OPEN:
+		{
+//			m2m_wifi_handle_events(NULL);
+			uint8_t qBuff[OVS_RX_SOCKET_BUFFER_SIZE];
+			uint16_t qBuffSize = 0;
+			uint16_t qSize = uxQueueMessagesWaiting(
+					m_gatewayInst->SocketTxQueue);
+
+			while (qSize > 0)
+			{
+				xQueueReceive(m_gatewayInst->SocketTxQueue, &qBuff[qBuffSize++],
+						0);
+				qSize--;
+			}
+			if (qBuffSize)
+				send(Sockets[MQTT_SOCKET].number, qBuff, qBuffSize, 0);
+
+			recv(Sockets[MQTT_SOCKET].number, qBuff,
+					sizeof(OVS_RX_SOCKET_BUFFER_SIZE), 0);
+
 			m2m_wifi_handle_events(NULL);
+		}
 			break;
 //		case GW_MQTT_CLIENT_CONNECTED:
 //			break;
