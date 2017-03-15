@@ -28,6 +28,9 @@ static Gateway m_gateway;
 static void gw_init_gateway()
 {
 	m_gateway.Status = GW_STARTING;
+	//TODO Retrieve NV Memory config
+	m_gateway.Id = 666;
+
 	//TODO Retrive WLAN config
 	sprintf((char *) m_gateway.WLANConnection.WLAN_SSID, "NuggetL");
 	sprintf((char *) m_gateway.WLANConnection.WLAN_PSK, "Furmiga1L");
@@ -45,7 +48,6 @@ static void gw_init_gateway()
 	m_gateway.Status = GW_STARTING;
 
 	m_gateway.Tasks.WifiTask = &WifiTaskDef;
-	m_gateway.Tasks.MQTTClientTask = &MQTTClientTaskDef;
 	m_gateway.Tasks.MQTTPublisherTask = &MQTTPublisherTaskDef;
 	m_gateway.Tasks.DataSourceTask = &DataSourceTaskDef;
 	m_gateway.Tasks.LocalStorageTask = &LocalStorageTaskDef;
@@ -81,18 +83,14 @@ static void gw_init_tasks()
 	m_gateway.Tasks.WifiTask->Handle = osThreadCreate(osThread(WifiTask),
 			&m_gateway);
 
-	osThreadDef(MQTTClient, m_gateway.Tasks.MQTTClientTask->Task,
-			osPriorityNormal, 1, 128);
-	m_gateway.Tasks.MQTTClientTask->Handle = osThreadCreate(
-			osThread(MQTTClient), &m_gateway);
-
 	osThreadDef(MQTTPublisherTask, m_gateway.Tasks.MQTTPublisherTask->Task,
-			osPriorityNormal, 1, 128);
+			osPriorityNormal, 1,
+			m_gateway.Tasks.MQTTPublisherTask->requestedHeap);
 	m_gateway.Tasks.MQTTPublisherTask->Handle = osThreadCreate(
 			osThread(MQTTPublisherTask), &m_gateway);
 
 	osThreadDef(DataSourceTask, m_gateway.Tasks.DataSourceTask->Task,
-			osPriorityNormal, 1, 128);
+			osPriorityNormal, 1, m_gateway.Tasks.DataSourceTask->requestedHeap);
 	m_gateway.Tasks.DataSourceTask->Handle = osThreadCreate(
 			osThread(DataSourceTask), &m_gateway);
 }
@@ -103,3 +101,12 @@ void qog_ovs_run()
 	gw_init_tasks();
 	osKernelStart();
 }
+
+#if defined(DEBUG)
+void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName)
+{
+	while (1)
+	{
+	}
+}
+#endif
