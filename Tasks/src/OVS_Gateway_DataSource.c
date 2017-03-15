@@ -62,6 +62,11 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst)
 
 	//Initialise Channels and Measurement
 	MeasurementSchedule.Channels = gwInst->DataChannels;
+
+	//TODO init in DataSource Impl
+	MeasurementSchedule.Channels[0].Enabled = true;
+	MeasurementSchedule.Channels[0].Id = 24;
+
 	xLastWakeTime = xTaskGetTickCount();
 
 	for (;;)
@@ -74,6 +79,9 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst)
 			m_gateway->TimeStamp++;
 			thisTime = m_gateway->TimeStamp;
 		}
+		else
+			continue;
+
 		for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++)
 		{
 			if (MeasurementSchedule.Channels[idx].Enabled == true)
