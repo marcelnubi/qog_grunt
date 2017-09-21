@@ -99,7 +99,6 @@ void qog_ovs_run()
 {
 	gw_init_gateway();
 	gw_init_tasks();
-	osKernelStart();
 }
 
 #if defined(DEBUG)

@@ -33,7 +33,6 @@ static void PushNumberData(double val, uint32_t channel, uint32_t timestamp)
 	xQueueReceive(m_gateway->DataSourceQs.DataAvailableQueue, &avail, 10);
 
 	m_gateway->DataSampleBuffer[avail].channelId = channel;
-	m_gateway->DataSampleBuffer[avail].has_numData = true;
 	m_gateway->DataSampleBuffer[avail].numData.timestamp = timestamp;
 	m_gateway->DataSampleBuffer[avail].numData.value = val;
 
