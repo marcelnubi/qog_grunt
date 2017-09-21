@@ -99,7 +99,7 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
 		/* Message send */
 	case SOCKET_MSG_SEND:
 	{
-		int16_t bytesSent = *(int16_t *) pvMsg;
+//		int16_t bytesSent = *(int16_t *) pvMsg;
 	}
 		break;
 		/* Message receive */
@@ -261,6 +261,9 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout, uint8_t SockNumber,
 			//TODO Tratar erro de socket, decidir se continua ou se para
 			Sockets[SockNumber].status = SocketClosed;
 		}
+			break;
+		case SocketConnected:
+			break;
 		}
 		//send tx queue byte
 		//TODO timeout
@@ -323,13 +326,14 @@ static qog_gw_error_t GatewayResolveHost(Gateway* m_gatewayInst)
 
 void GatewaySocketSend(Gateway* m_gatewayInst)
 {
-	uint8_t sendData = 0;
-	xQueueReceive(m_gatewayInst->SocketTxQueue, sendData, 10);
+	uint32_t sendData = 0;
+	xQueueReceive(m_gatewayInst->SocketTxQueue, &sendData, 10);
 	int32_t rc = 0;
 	if (!send(Sockets[0].number, &sendData, 1, 0))
 		rc = 1;
 	else
 		rc = -1;
+	rc = rc;
 	m2m_wifi_handle_events(NULL);
 }
 
@@ -421,9 +425,9 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
 			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 			break;
-//		case GW_AP_CONFIG_MODE:
-//			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
-//			break;
+		case GW_AP_CONFIG_MODE:
+			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
+			break;
 		case GW_BROKER_DNS_RESOLVED:
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 			break;
@@ -460,10 +464,10 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 			m2m_wifi_handle_events(NULL);
 		}
 			break;
-//		case GW_MQTT_CLIENT_CONNECTED:
-//			break;
-//		case GW_MQTT_CLIENT_DISCONNECTED:
-//			break;
+		case GW_MQTT_CLIENT_CONNECTED:
+			break;
+		case GW_MQTT_CLIENT_DISCONNECTED:
+			break;
 		case GW_WLAN_CONNECTED:
 			//TODO retry counter
 			if (GatewayGetSystemTimeNTP(TIMEOUT_SOCKET_OPEN,

@@ -38,7 +38,7 @@ static enum
 	MQTT_CLIENT_DISCONNECTED
 } MQTTClientState;
 
-messageHandler MQTTHandler_Info(MessageData * data)
+void MQTTHandler_Info(MessageData * data)
 {
 	uint32_t asd = 123;
 	asd++;
@@ -59,8 +59,8 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 			rxBuf, MQTT_BUFFER_SIZE);
 
 	MQTTPacket_connectData conn = MQTTPacket_connectData_initializer;
-	conn.username.cstring = gw->BrokerParams.Username;
-	conn.password.cstring = gw->BrokerParams.Password;
+	conn.username.cstring = (char*) gw->BrokerParams.Username;
+	conn.password.cstring = (char*) gw->BrokerParams.Password;
 	conn.clientID.cstring = "GWProto"; //TODO gw->id ?
 	conn.cleansession = false;
 	conn.keepAliveInterval = 30;
@@ -85,9 +85,10 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 				{
 					MQTTClientState = MQTT_CLIENT_CONNECTED;
 
-					sprintf(topic, "/%lu/Info", (uint32_t) gw->Id);
-					MQTTSubscribe(&client, topic, QOS0, &MQTTHandler_Info);
-				}//TODO tratar erro de conexão MQTT
+					sprintf((char*) topic, "/%lu/Info", (uint32_t) gw->Id);
+					MQTTSubscribe(&client, (char*) topic, QOS0,
+							MQTTHandler_Info);
+				} //TODO tratar erro de conexão MQTT
 			}
 		}
 			break;
@@ -116,8 +117,9 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 				msg.qos = QOS0;
 				msg.payload = msgBuf;
 				msg.payloadlen = ostream.bytes_written;
-				sprintf(&topic, "/channel/%u/protobuf/data", sample->channelId);
-				MQTTPublish(&client, topic, &msg);//TODO Tratar erro de envio de mensagem MQTT
+				sprintf((char*) &topic, "/channel/%lu/protobuf/data",
+						sample->channelId);
+				MQTTPublish(&client, (char*) topic, &msg); //TODO Tratar erro de envio de mensagem MQTT
 
 				xQueueSend(gw->DataSourceQs.DataAvailableQueue, &idx, 0);
 			}
@@ -132,6 +134,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 		}
 
 	}
+	return 0;
 }
 
 #endif
