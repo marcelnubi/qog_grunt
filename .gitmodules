@@ -10,3 +10,6 @@
 [submodule "nanopb"]
 	path = nanopb
 	url = https://github.com/marcelnubi/nanopb.git
+[submodule "wsn_lib"]
+	path = wsn_lib
+	url = https://bitbucket.org/qogni/wsn_lib
