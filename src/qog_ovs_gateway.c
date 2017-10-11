@@ -29,8 +29,7 @@ static void gw_init_gateway()
 {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
-	m_gateway.Id = 666;
-
+	//TODO Ler Gateway Id URI
 	//TODO Retrive WLAN config
 	sprintf((char *) m_gateway.WLANConnection.WLAN_SSID, "NuggetL");
 	sprintf((char *) m_gateway.WLANConnection.WLAN_PSK, "Furmiga1L");
