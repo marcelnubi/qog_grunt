@@ -12,6 +12,10 @@
 
 #define MQTT_TIMEOUT_MS 1000
 #define MQTT_BUFFER_SIZE 512
+#define MQTT_CONNECT_RETRY_DELAY_MS 5000
+#define MQTT_CLIENT_PUBLISH_RETRY 5
+#define MQTT_CLIET_PUBLISH_RETRY_DELAY_MS 100
+#define MQTT_TASK_LOOP_MS 100
 
 //-------- Gateway Interface - START
 #include "qog_ovs_gateway_internal_types.h"
@@ -61,13 +65,17 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 	MQTTPacket_connectData conn = MQTTPacket_connectData_initializer;
 	conn.username.cstring = (char*) gw->BrokerParams.Username;
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
-	conn.clientID.cstring = "GWProto"; //TODO gw->id ?
+
+	uint8_t gId[12];
+	sprintf((char *) gId, "%lu%lu%lu", gw->Id.x[0], gw->Id.x[1], gw->Id.x[2]);
+	conn.clientID.cstring = (char*) gId;
+
 	conn.cleansession = false;
 	conn.keepAliveInterval = 30;
 
 	for (;;)
 	{
-		vTaskDelay(1000);
+		vTaskDelay(MQTT_TASK_LOOP_MS);
 		switch (MQTTClientState)
 		{
 		case MQTT_CLIENT_UNNINITIALIZED:
@@ -85,10 +93,16 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 				{
 					MQTTClientState = MQTT_CLIENT_CONNECTED;
 
-					sprintf((char*) topic, "/%lu/Info", (uint32_t) gw->Id);
+					sprintf((char*) topic, "/%lu%lu%lu/Info",
+							(uint32_t) gw->Id.x[0], (uint32_t) gw->Id.x[1],
+							(uint32_t) gw->Id.x[2]);
 					MQTTSubscribe(&client, (char*) topic, QOS0,
 							MQTTHandler_Info);
-				} //TODO tratar erro de conexão MQTT
+				}
+				else
+				{
+					vTaskDelay(MQTT_CONNECT_RETRY_DELAY_MS - MQTT_TASK_LOOP_MS);
+				}
 			}
 		}
 			break;
@@ -119,9 +133,26 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 				msg.payloadlen = ostream.bytes_written;
 				sprintf((char*) &topic, "/channel/%lu/protobuf/data",
 						sample->channelId);
-				MQTTPublish(&client, (char*) topic, &msg); //TODO Tratar erro de envio de mensagem MQTT
 
-				xQueueSend(gw->DataSourceQs.DataAvailableQueue, &idx, 0);
+				uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
+				while (retry > 0)
+				{
+					if (!client.isconnected)
+					{
+						MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+						break;
+					}
+					if (MQTTPublish(&client, (char*) topic, &msg)
+							== MQTT_SUCCESS)
+					{
+						xQueueSend(gw->DataSourceQs.DataAvailableQueue, &idx,
+								0);
+						break;
+					}
+					retry--;
+					vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
+				}
+
 			}
 
 #if defined(MQTT_TASK)
