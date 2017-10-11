@@ -30,7 +30,8 @@
 typedef SemaphoreHandle_t qog_Mutex;
 typedef TaskFunction_t qog_Task;
 typedef QueueHandle_t qog_Queue;
-typedef uint32_t GatewayId;
+//typedef uint32_t GatewayId;
+typedef struct GatewayId { uint32_t x[3]; } GatewayId;
 
 typedef struct
 {
