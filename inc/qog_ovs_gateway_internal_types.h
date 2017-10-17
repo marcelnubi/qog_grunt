@@ -77,7 +77,7 @@ typedef struct
 	uint8_t Password[32];
 } BrokerParams;
 
-typedef Channel DataChannel;
+typedef OVS_Channel DataChannel;
 
 typedef enum
 {
@@ -116,7 +116,7 @@ struct Gateway
 	qog_DataSource_queues DataSourceQs;
 	qog_Queue SocketRxQueue;
 	qog_Queue SocketTxQueue;
-	ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
+	OVS_ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
 	qog_Mutex MQTTMutex;
 	qog_Mutex LocalStorageMutex;
 	uint32_t TimeStamp;
