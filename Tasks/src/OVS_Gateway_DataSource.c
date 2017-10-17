@@ -41,7 +41,7 @@ static void PushNumberData(double val, uint32_t channel, uint32_t timestamp)
 
 struct
 {
-	Channel * Channels;
+	OVS_Channel * Channels;
 	uint32_t NextMeasurement[MAX_DATA_CHANNELS];
 } MeasurementSchedule;
 
