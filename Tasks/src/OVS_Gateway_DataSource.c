@@ -48,7 +48,7 @@ struct
 static qog_Task DataSourceTaskImpl(Gateway * gwInst);
 
 qog_gateway_task DataSourceTaskDef =
-{ &DataSourceTaskImpl, 0x200, NULL };
+{ &DataSourceTaskImpl, 128, NULL };
 
 qog_Task DataSourceTaskImpl(Gateway * gwInst)
 {

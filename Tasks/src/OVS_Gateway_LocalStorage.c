@@ -10,7 +10,7 @@
 static qog_Task LocalStorageTaskImpl(Gateway * gwInst);
 
 qog_gateway_task LocalStorageTaskDef =
-{ &LocalStorageTaskImpl, 0x200, NULL };
+{ &LocalStorageTaskImpl, 128, NULL };
 
 static qog_Task LocalStorageTaskImpl(Gateway * gwInst)
 {

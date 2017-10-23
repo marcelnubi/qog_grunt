@@ -19,7 +19,7 @@
 #include "string.h"
 
 //-------- Gateway Interface - START
-#define WIFI_TASK_HEAP 0x200
+#define WIFI_TASK_HEAP 128
 static const int TIMEOUT_SOCKET_OPEN = 4000;
 static const int TIMEOUT_WIFI_WLAN_CONNECT = 5000;
 static const int TIMEOUT_WIFI_RESOLVE_HOST = 5000;

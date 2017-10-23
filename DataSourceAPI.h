@@ -10,8 +10,8 @@
 
 #include <stdint.h>
 
-extern void DataSourceInit();
-extern void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
-extern double DataSourceNumberRead(uint8_t channelNumber);
+void DataSourceInit();
+void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
+double DataSourceNumberRead(uint8_t channelNumber);
 
 #endif /* DATASOURCEAPI_H_ */

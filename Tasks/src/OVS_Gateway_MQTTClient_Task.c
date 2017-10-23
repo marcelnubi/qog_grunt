@@ -20,7 +20,7 @@
 //-------- Gateway Interface - START
 #include "qog_ovs_gateway_internal_types.h"
 
-#define MQTT_PUBLISHER_TASK_HEAP 0x200
+#define MQTT_PUBLISHER_TASK_HEAP 128
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst);
 
@@ -67,7 +67,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
 
 	uint8_t gId[12];
-	sprintf((char *) gId, "%lu%lu%lu", gw->Id.x[0], gw->Id.x[1], gw->Id.x[2]);
+	sprintf((char *) gId, "%lu%lu%lu", gw->Id.x[0], gw->Id.x[1], gw->Id.x[2]); //TODO Use memset instead of sprintf
 	conn.clientID.cstring = (char*) gId;
 
 	conn.cleansession = false;
