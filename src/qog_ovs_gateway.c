@@ -23,6 +23,8 @@
 
 #include "OVS_Gateway_Task.h"
 
+#include "gpio.h"
+
 //Replacing Sync delay with osDelay
 void HAL_Delay(uint32_t ms) {
 	osDelay(ms);
