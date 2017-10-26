@@ -8,6 +8,9 @@
 #include "qog_ovs_gateway_internal_types.h"
 #include "DataSourceAPI.h"
 
+static Gateway * m_gateway;
+static double currentVal = 0;
+
 void __attribute__((weak)) DataSourceInit()
 {
 	uint32_t asd = 123;
@@ -20,12 +23,8 @@ void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
 }
 double __attribute__((weak)) DataSourceNumberRead(uint8_t channelNumber)
 {
-	return 42;
+	return m_gateway->TimeStamp;
 }
-
-static Gateway * m_gateway;
-
-static double currentVal = 0;
 
 static void PushNumberData(double val, uint32_t channel, uint32_t timestamp)
 {

@@ -9,8 +9,11 @@
 
 #include "Overseer_Connection.h"
 #include "FreeRTOS.h"
+
 #include "qog_gateway_error_types.h"
 #include "qog_ovs_gateway_internal_types.h"
+#include "qog_gateway_power.h"
+
 #include "../inc/OVS_Gateway_Task.h"
 #include "driver/include/m2m_wifi.h"
 #include "socket/include/socket.h"
@@ -19,7 +22,7 @@
 #include "string.h"
 
 //-------- Gateway Interface - START
-#define WIFI_TASK_HEAP 128
+#define WIFI_TASK_HEAP 0x200
 static const int TIMEOUT_SOCKET_OPEN = 4000;
 static const int TIMEOUT_WIFI_WLAN_CONNECT = 5000;
 static const int TIMEOUT_WIFI_RESOLVE_HOST = 5000;
@@ -31,18 +34,15 @@ static const uint8_t NTP_SOCKET = 1;
 
 static qog_Task WifiTaskImpl(Gateway * gwInst);
 
-qog_gateway_task WifiTaskDef =
-{ &WifiTaskImpl, WIFI_TASK_HEAP, NULL };
+qog_gateway_task WifiTaskDef = { &WifiTaskImpl, WIFI_TASK_HEAP, NULL };
 //-------- Gateway Interface - END
 
 #define MAX_OPEN_SOCKETS 8
-typedef enum
-{
+typedef enum {
 	SocketClosed = 0, SocketConnected, SocketWaiting, SocketError
 } SocketStatus;
 
-static struct
-{
+static struct {
 	SocketStatus status;
 	SOCKET number;
 } Sockets[MAX_OPEN_SOCKETS];
@@ -60,63 +60,48 @@ Gateway * m_gatewayInst = 0;
  *
  * \return None.
  */
-static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
-{
+static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 	int16_t ret;
-	switch (u8Msg)
-	{
+	switch (u8Msg) {
 	/* Socket connected */
-	case SOCKET_MSG_BIND:
-	{
+	case SOCKET_MSG_BIND: {
 		tstrSocketBindMsg *pstrBind = (tstrSocketBindMsg *) pvMsg;
-		if (pstrBind && pstrBind->status == 0)
-		{
+		if (pstrBind && pstrBind->status == 0) {
 			ret = recvfrom(sock, NTP_Buffer, 48, 0);
-			if (ret != SOCK_ERR_NO_ERROR)
-			{
+			if (ret != SOCK_ERR_NO_ERROR) {
 			}
 		}
 	}
 		break;
-	case SOCKET_MSG_CONNECT:
-	{
+	case SOCKET_MSG_CONNECT: {
 		tstrSocketConnectMsg *pstrConnect = (tstrSocketConnectMsg *) pvMsg;
-		if (pstrConnect->s8Error == 0)
-		{
-			if (pstrConnect->sock == Sockets[MQTT_SOCKET].number)
-			{
+		if (pstrConnect->s8Error == 0) {
+			if (pstrConnect->sock == Sockets[MQTT_SOCKET].number) {
 				Sockets[MQTT_SOCKET].status = SocketConnected;
 				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
 			}
-		}
-		else
-		{
+		} else {
 			//TODO socket error
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
 		break;
 	}
 		/* Message send */
-	case SOCKET_MSG_SEND:
-	{
+	case SOCKET_MSG_SEND: {
 //		int16_t bytesSent = *(int16_t *) pvMsg;
 	}
 		break;
 		/* Message receive */
-	case SOCKET_MSG_RECVFROM:
-	{
+	case SOCKET_MSG_RECVFROM: {
 		tstrSocketRecvMsg *pstrRx = (tstrSocketRecvMsg *) pvMsg;
 		uint8_t packetBuffer[48];
 		memcpy(&packetBuffer, pstrRx->pu8Buffer, sizeof(packetBuffer));
 
-		if ((packetBuffer[0] & 0x7) != 4)
-		{ /* expect only server response */
+		if ((packetBuffer[0] & 0x7) != 4) { /* expect only server response */
 //					printf(
 //							"socket_cb: Expecting response from Server Only!\r\n");
 			return; /* MODE is not server, abort */
-		}
-		else
-		{
+		} else {
 			uint32_t secsSince1900 = packetBuffer[40] << 24
 					| packetBuffer[41] << 16 | packetBuffer[42] << 8
 					| packetBuffer[43];
@@ -128,32 +113,26 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
 			const uint32_t seventyYears = 2208988800UL;
 			m_gatewayInst->TimeStamp = secsSince1900 - seventyYears;
 			ret = close(Sockets[NTP_SOCKET].number);
-			if (ret == SOCK_ERR_NO_ERROR)
-			{
+			if (ret == SOCK_ERR_NO_ERROR) {
 				Sockets[NTP_SOCKET].number = -1;
 				Sockets[NTP_SOCKET].status = SocketClosed;
 			}
 		}
 	}
 		break;
-	case SOCKET_MSG_RECV:
-	{
+	case SOCKET_MSG_RECV: {
 		tstrSocketRecvMsg *pstrRecv = (tstrSocketRecvMsg *) pvMsg;
-		if (pstrRecv && pstrRecv->s16BufferSize > 0)
-		{
+		if (pstrRecv && pstrRecv->s16BufferSize > 0) {
 //			if ((pstrRecv->strRemoteAddr.sin_addr.s_addr
 //					== m_gatewayInst->BrokerParams.HostIp)) //TODO How to check remote address match with Broker config?
 //			{
 			uint16_t idx = 0;
-			while (idx++ < pstrRecv->s16BufferSize)
-			{
+			while (idx++ < pstrRecv->s16BufferSize) {
 				xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
 						0);
 			}
 //			}
-		}
-		else
-		{
+		} else {
 			close(Sockets[MQTT_SOCKET].number);
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
@@ -165,35 +144,27 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg)
 	}
 }
 
-static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
-{
-	switch (u8MsgType)
-	{
-	case M2M_WIFI_RESP_CON_STATE_CHANGED:
-	{
+static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
+	switch (u8MsgType) {
+	case M2M_WIFI_RESP_CON_STATE_CHANGED: {
 		tstrM2mWifiStateChanged *pstrWifiState =
 				(tstrM2mWifiStateChanged *) pvMsg;
-		if (pstrWifiState->u8CurrState == M2M_WIFI_CONNECTED)
-		{
+		if (pstrWifiState->u8CurrState == M2M_WIFI_CONNECTED) {
 			m2m_wifi_request_dhcp_client();
-		}
-		else if (pstrWifiState->u8CurrState == M2M_WIFI_DISCONNECTED)
-		{
+		} else if (pstrWifiState->u8CurrState == M2M_WIFI_DISCONNECTED) {
 			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 		}
 
 	}
 		break;
-	case M2M_WIFI_REQ_DHCP_CONF:
-	{
+	case M2M_WIFI_REQ_DHCP_CONF: {
 //		tstrM2MIPConfig *conf = (tstrM2MIPConfig*) pvMsg;
 		m_gatewayInst->Status = GW_WLAN_CONNECTED;
 		/* Obtain the IP Address by network name */
 
 	}
 		break;
-	case M2M_WIFI_RESP_IP_CONFLICT:
-	{
+	case M2M_WIFI_RESP_IP_CONFLICT: {
 		m2m_wifi_request_dhcp_client();
 	}
 		break;
@@ -204,8 +175,7 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
 ////		asd++;
 //	}
 		break;
-	default:
-	{
+	default: {
 		break;
 	}
 	}
@@ -219,25 +189,20 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg)
  *
  * \return None.
  */
-static void dns_resolve_cb(uint8_t *hostName, uint32_t hostIp)
-{
+static void dns_resolve_cb(uint8_t *hostName, uint32_t hostIp) {
 	m_gatewayInst->BrokerParams.HostIp = hostIp;
 	m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
 }
 
 static qog_gw_error_t GatewaySocketOpen(uint32_t timeout, uint8_t SockNumber,
-		uint32_t SockHost, uint16_t SockPort)
-{
+		uint32_t SockHost, uint16_t SockPort) {
 	close(Sockets[SockNumber].number);
 	Sockets[SockNumber].status = SocketClosed;
 	m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 
-	while (Sockets[SockNumber].status != SocketConnected)
-	{
-		switch (Sockets[SockNumber].status)
-		{
-		case SocketClosed:
-		{
+	while (Sockets[SockNumber].status != SocketConnected) {
+		switch (Sockets[SockNumber].status) {
+		case SocketClosed: {
 			struct sockaddr_in addr_in;
 			addr_in.sin_family = AF_INET;
 			addr_in.sin_port = _htons(SockPort);
@@ -249,15 +214,13 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout, uint8_t SockNumber,
 				Sockets[SockNumber].status = SocketWaiting;
 		}
 			break;
-		case SocketWaiting:
-		{
+		case SocketWaiting: {
 			vTaskDelay(TASK_PERIOD_MS_WIFI / 10);
 			m2m_wifi_handle_events(NULL);
 			//TODO retry timeout
 		}
 			break;
-		case SocketError:
-		{
+		case SocketError: {
 			//TODO Tratar erro de socket, decidir se continua ou se para
 			Sockets[SockNumber].status = SocketClosed;
 		}
@@ -272,8 +235,7 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout, uint8_t SockNumber,
 }
 
 static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
-		GatewayStatus status, TickType_t timeout, TickType_t pollingTime)
-{
+		GatewayStatus status, TickType_t timeout, TickType_t pollingTime) {
 	TickType_t xTicksToWait = timeout;
 	TimeOut_t xTimeOut;
 
@@ -284,8 +246,7 @@ static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
 		vTaskDelay(pollingTime);
 		m2m_wifi_handle_events(NULL);
 
-		if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE)
-		{
+		if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE) {
 			/* Timed out before the wanted number of bytes were available, exit the
 			 loop. */
 			m_gatewayInst->Status = GW_ERROR;
@@ -296,8 +257,7 @@ static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
 	}
 }
 
-static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst)
-{
+static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst) {
 	m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 
 	m2m_wifi_connect((char*) m_gatewayInst->WLANConnection.WLAN_SSID,
@@ -311,8 +271,7 @@ static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst)
 	return GW_e_OK;
 }
 
-static qog_gw_error_t GatewayResolveHost(Gateway* m_gatewayInst)
-{
+static qog_gw_error_t GatewayResolveHost(Gateway* m_gatewayInst) {
 	if (m_gatewayInst->Status != GW_WLAN_CONNECTED)
 		return GW_e_APPLICATION_ERROR;
 
@@ -324,8 +283,7 @@ static qog_gw_error_t GatewayResolveHost(Gateway* m_gatewayInst)
 	return GW_e_OK;
 }
 
-void GatewaySocketSend(Gateway* m_gatewayInst)
-{
+void GatewaySocketSend(Gateway* m_gatewayInst) {
 	uint32_t sendData = 0;
 	xQueueReceive(m_gatewayInst->SocketTxQueue, &sendData, 10);
 	int32_t rc = 0;
@@ -338,8 +296,7 @@ void GatewaySocketSend(Gateway* m_gatewayInst)
 }
 
 static qog_gw_error_t GatewayGetSystemTimeNTP(TickType_t timeout,
-		TickType_t pollingTime)
-{
+		TickType_t pollingTime) {
 	m_gatewayInst->TimeStamp = 0;
 	Sockets[NTP_SOCKET].number = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -369,8 +326,7 @@ static qog_gw_error_t GatewayGetSystemTimeNTP(TickType_t timeout,
 		vTaskDelay(pollingTime);
 		m2m_wifi_handle_events(NULL);
 
-		if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE)
-		{
+		if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE) {
 			/* Timed out before the wanted number of bytes were available, exit the
 			 loop. */
 			m_gatewayInst->Status = GW_ERROR;
@@ -380,15 +336,13 @@ static qog_gw_error_t GatewayGetSystemTimeNTP(TickType_t timeout,
 			break;
 	}
 
-	if (ret != M2M_SUCCESS)
-	{
+	if (ret != M2M_SUCCESS) {
 		return GW_e_APPLICATION_ERROR;
 	}
 	return GW_e_OK;
 }
 
-void GatewaySocketInit()
-{
+void GatewaySocketInit() {
 	socketDeinit();
 	for (uint8_t i = 0; i < MAX_OPEN_SOCKETS; i++)
 		Sockets[i].number = -1;
@@ -397,8 +351,7 @@ void GatewaySocketInit()
 	registerSocketCallback(socket_cb, dns_resolve_cb);
 }
 
-qog_Task WifiTaskImpl(Gateway * gwInst)
-{
+qog_Task WifiTaskImpl(Gateway * gwInst) {
 	m_gatewayInst = gwInst;
 
 	tstrWifiInitParam param;
@@ -410,21 +363,17 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 	qog_gw_pwr_wifi_enable();
 	HAL_Delay(200);
 	nm_bsp_init();
-//	osDelay(100);
 	/* USER CODE BEGIN 2 */
 	/* Initialize Wi-Fi driver with data and status callbacks. */
 	param.pfAppWifiCb = wifi_cb;
 	ret = m2m_wifi_init(&param);
-	if (M2M_SUCCESS != ret)
-	{
+	if (M2M_SUCCESS != ret) {
 		//TODO Debug port out
 	}
 	GatewaySocketInit();
-	for (;;)
-	{
+	for (;;) {
 		vTaskDelay(TASK_PERIOD_MS_WIFI);
-		switch (m_gatewayInst->Status)
-		{
+		switch (m_gatewayInst->Status) {
 		case GW_STARTING:
 			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
 			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
@@ -445,16 +394,14 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 
 			//TODO retry counter
 			break;
-		case GW_BROKER_SOCKET_OPEN:
-		{
+		case GW_BROKER_SOCKET_OPEN: {
 //			m2m_wifi_handle_events(NULL);
 			uint8_t qBuff[OVS_RX_SOCKET_BUFFER_SIZE];
 			uint16_t qBuffSize = 0;
 			uint16_t qSize = uxQueueMessagesWaiting(
 					m_gatewayInst->SocketTxQueue);
 
-			while (qSize > 0)
-			{
+			while (qSize > 0) {
 				xQueueReceive(m_gatewayInst->SocketTxQueue, &qBuff[qBuffSize++],
 						0);
 				qSize--;
@@ -488,11 +435,14 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 			//TODO retry counter
 			break;
 		case GW_ERROR:
-			nm_bsp_init();
-			ret = m2m_wifi_init(&param);
-			socketInit();
-			registerSocketCallback(socket_cb, dns_resolve_cb);
-			m_gatewayInst->Status = GW_STARTING;
+//			while (1) {
+//				HAL_Delay(20);
+//			}
+//			nm_bsp_{init();
+//			ret = m2m_wifi_init(&param);
+//			socketInit();
+//			registerSocketCallback(socket_cb, dns_resolve_cb);
+//			m_gatewayInst->Status = GW_STARTING;
 			break;
 //		default:
 //			break;

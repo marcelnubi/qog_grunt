@@ -20,7 +20,7 @@
 //-------- Gateway Interface - START
 #include "qog_ovs_gateway_internal_types.h"
 
-#define MQTT_PUBLISHER_TASK_HEAP 128
+#define MQTT_PUBLISHER_TASK_HEAP 0x200
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst);
 
@@ -68,8 +68,8 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 
 	uint8_t gId[12];
 	sprintf((char *) gId, "%lu%lu%lu", gw->Id.x[0], gw->Id.x[1], gw->Id.x[2]); //TODO Use memset instead of sprintf
-	conn.clientID.cstring = (char*) gId;
-
+	//conn.clientID.cstring = (char*) gId;
+	conn.clientID.cstring = "Rodrigo Vitar";
 	conn.cleansession = false;
 	conn.keepAliveInterval = 30;
 
@@ -98,6 +98,11 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 							(uint32_t) gw->Id.x[2]);
 					MQTTSubscribe(&client, (char*) topic, QOS0,
 							MQTTHandler_Info);
+					MQTTMessage msg;
+					msg.qos = 0;
+					msg.payload = "Hello";
+					msg.payloadlen = 5;
+					MQTTPublish(&client,"/",&msg);
 				}
 				else
 				{

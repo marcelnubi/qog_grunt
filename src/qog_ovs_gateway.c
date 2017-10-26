@@ -30,10 +30,11 @@
 void HAL_Delay(uint32_t ms) {
 	osDelay(ms);
 }
+
+
 static Gateway m_gateway;
 
-static void gw_init_gateway()
-{
+static void gw_init_gateway() {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
 	//TODO Ler Gateway Id URI
@@ -59,16 +60,14 @@ static void gw_init_gateway()
 	m_gateway.Tasks.LocalStorageTask = &LocalStorageTaskDef;
 }
 
-static void gw_init_shared_queues()
-{
+static void gw_init_shared_queues() {
 	m_gateway.DataSourceQs.DataAvailableQueue = xQueueCreate(
 			OVS_NUMBER_DATA_BUFFER_SIZE, sizeof(uint8_t));
 	m_gateway.DataSourceQs.DataUsedQueue = xQueueCreate(
 			OVS_NUMBER_DATA_BUFFER_SIZE, sizeof(uint8_t));
 
 	uint8_t initq = 0;
-	for (initq = 0; initq < MAX_SAMPLE_BUFFER_SIZE; initq++)
-	{
+	for (initq = 0; initq < MAX_SAMPLE_BUFFER_SIZE; initq++) {
 		xQueueSend(m_gateway.DataSourceQs.DataAvailableQueue, (void * )&initq,
 				100);
 	}
@@ -80,8 +79,7 @@ static void gw_init_shared_queues()
 
 }
 
-static void gw_init_tasks()
-{
+static void gw_init_tasks() {
 	gw_init_shared_queues();
 
 	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityNormal, 1,
@@ -101,8 +99,7 @@ static void gw_init_tasks()
 			osThread(DataSourceTask), &m_gateway);
 }
 
-void qog_ovs_run()
-{
+void qog_ovs_run() {
 	gw_init_gateway();
 	gw_init_tasks();
 }
@@ -115,10 +112,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 #if defined(DEBUG)
-void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName)
-{
-	while (1)
-	{
+void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName) {
+	while (1) {
 	}
 }
 #endif
