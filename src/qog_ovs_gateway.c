@@ -16,6 +16,7 @@
 #include "qog_ovs_gateway_internal_types.h"
 
 #include "winc_1500_lib/driver/include/m2m_wifi.h"
+#include "winc_1500_lib/bsp/include/nm_bsp.h"
 
 #include "Overseer_Connection.h"
 #include "OVS_ChannelNumberData.pb.h"
