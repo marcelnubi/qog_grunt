@@ -130,6 +130,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 				xQueueReceive(gw->DataSourceQs.DataUsedQueue, &idx, 0);
 
 				OVS_ChannelNumberData * sample = &gw->DataSampleBuffer[idx];
+				sample->has_numData = true;
 
 				ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 				pb_encode(&ostream, OVS_ChannelNumberData_fields, sample);
