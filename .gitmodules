@@ -13,3 +13,6 @@
 [submodule "wsn_lib"]
 	path = wsn_lib
 	url = https://bitbucket.org/qogni/wsn_lib
+[submodule "std_fw_lib_util"]
+	path = std_fw_lib_util
+	url = https://bitbucket.org/qogni/std_fw_lib_util
