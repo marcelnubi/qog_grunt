@@ -405,6 +405,10 @@ qog_Task WifiTaskImpl(Gateway * gwInst)
 	int8_t ret;
 	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
 
+	qog_gw_pwr_wifi_disable();
+	HAL_Delay(200);
+	qog_gw_pwr_wifi_enable();
+	HAL_Delay(200);
 	nm_bsp_init();
 //	osDelay(100);
 	/* USER CODE BEGIN 2 */
