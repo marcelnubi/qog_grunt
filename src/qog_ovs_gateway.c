@@ -100,6 +100,13 @@ void qog_ovs_run()
 	gw_init_tasks();
 }
 
+//ISR
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == WIFI_IRQ_N_Pin) {
+		nm_bsp_isr_cb();
+	}
+}
+
 #if defined(DEBUG)
 void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName)
 {
