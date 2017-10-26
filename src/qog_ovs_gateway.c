@@ -23,6 +23,10 @@
 
 #include "OVS_Gateway_Task.h"
 
+//Replacing Sync delay with osDelay
+void HAL_Delay(uint32_t ms) {
+	osDelay(ms);
+}
 static Gateway m_gateway;
 
 static void gw_init_gateway()
