@@ -12,6 +12,8 @@
 #include "i2c.h"
 #include "adc.h"
 
+#include "math.h"
+
 static Gateway * m_gateway;
 static double currentVal = 0;
 
@@ -42,34 +44,55 @@ void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
 		uint8_t * configBytes) {
 }
 double __attribute__((weak)) DataSourceNumberRead(uint8_t channelNumber) {
-	uint32_t val = 0;
-	HAL_ADC_Start(&hadc);
-	if (HAL_ADC_PollForConversion(&hadc, 10) == HAL_OK) {
-		val = HAL_ADC_GetValue(&hadc);
-		HAL_ADC_Stop(&hadc);
+	double temperature = 0;
 
-#define TEMP110_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FFFF7C2))
-#define TEMP30_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FFFF7B8))
-#define VDD_CALIB ((uint16_t) (330))
-#define VDD_APPLI ((uint16_t) (330))
+	switch (channelNumber) {
+	case 0: {
+		uint8_t dasd[2] = { 0, 0 };
+		if (HAL_I2C_Master_Receive(&hi2c2, 0x14 << 1, dasd, 2, 100) != HAL_OK) {
+			temperature = m_gateway->TimeStamp;
+		} else {
+			uint16_t temp_code = (dasd[0] << 8) | dasd[1];
+			double Vf = temp_code * 0.000045776;
+			double Rt = 7150.0 * Vf / (3.0 - Vf);
+			double tempDouble = (1.0f / 298.15f)
+					+ (1.0f / 3560.0f) * log(Rt / 2000); // 1/T  beta-equation
+			tempDouble = 1.0f / tempDouble; // T, Kelvin
+			tempDouble = (double) tempDouble - 273.15f; // T , Celsius
+			temperature = tempDouble;
+		}
 
-		double temperature; /* will contain the temperature in degrees Celsius */
-		temperature = (((double) val * VDD_APPLI / VDD_CALIB)
-				- (int32_t) *TEMP30_CAL_ADDR);
-		temperature = temperature * (int32_t) (110 - 30);
-		temperature = temperature
-				/ (int32_t) (*TEMP110_CAL_ADDR - *TEMP30_CAL_ADDR);
-		temperature = temperature + 30;
-		temperature-=57;
-		return temperature;
+	}
+		break;
+	case 1: {
+		uint8_t dasd[2] = { 0, 0 };
+		if (HAL_I2C_Mem_Read(&hi2c2, 0x40 << 1, 0xE5, 1, dasd, 2, 100)
+				!= HAL_OK)
+			temperature = m_gateway->TimeStamp;
+		else {
+			uint16_t rh_code = (dasd[0] << 8) | dasd[1];
+			temperature = (125.0 * rh_code / 65536) - 6.0;
+		}
+	}
+		break;
+
+	case 2: {
+		uint8_t dasd[2] = { 0, 0 };
+		if (HAL_I2C_Mem_Read(&hi2c2, 0x40 << 1, 0xE3, 1, dasd, 2, 100)
+				!= HAL_OK)
+			temperature = m_gateway->TimeStamp;
+		else {
+			uint16_t temp_code = (dasd[0] << 8) | dasd[1];
+			temperature = (175.72 * temp_code / 65536) - 46.85;
+		}
+	}
+		break;
+
+	default:
+		break;
 	}
 
-	uint8_t dasd[2] = { 0, 0 };
-	if (HAL_I2C_Mem_Read(&hi2c2, 0x40, 0xE5, 1, dasd, 2, 100) != HAL_OK)
-		return m_gateway->TimeStamp;
-	else {
-		return (uint32_t) *dasd;
-	}
+	return temperature;
 }
 
 static void PushNumberData(double val, uint32_t channel, uint32_t timestamp) {
@@ -107,6 +130,12 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	MeasurementSchedule.Channels[0].Enabled = true;
 	MeasurementSchedule.Channels[0].Id = 24;
 
+	MeasurementSchedule.Channels[1].Enabled = true;
+	MeasurementSchedule.Channels[1].Id = 4;
+
+	MeasurementSchedule.Channels[2].Enabled = true;
+	MeasurementSchedule.Channels[2].Id = 8;
+
 	xLastWakeTime = xTaskGetTickCount();
 
 	for (;;) {
@@ -122,7 +151,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 		for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
 			if (MeasurementSchedule.Channels[idx].Enabled == true) {
 				if (MeasurementSchedule.NextMeasurement[idx] <= thisTime) {
-					currentVal = DataSourceNumberRead(idx + 1);
+					currentVal = DataSourceNumberRead(idx);
 					PushNumberData(currentVal,
 							MeasurementSchedule.Channels[idx].Id, thisTime);
 					MeasurementSchedule.NextMeasurement[idx] = thisTime
