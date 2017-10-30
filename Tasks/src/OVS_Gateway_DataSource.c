@@ -10,6 +10,7 @@
 #include "qog_gateway_power.h"
 
 #include "i2c.h"
+#include "adc.h"
 
 static Gateway * m_gateway;
 static double currentVal = 0;
@@ -19,12 +20,50 @@ void __attribute__((weak)) DataSourceInit() {
 	asd++;
 	asd = 12 + asd;
 
+	ADC_ChannelConfTypeDef sConf;
+
+	HAL_ADCEx_Calibration_Start(&hadc);
+
+	hadc.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+	if (HAL_ADC_Init(&hadc) != HAL_OK) {
+		Error_Handler();
+	}
+
+	sConf.Channel = ADC_CHANNEL_VBAT;
+	sConf.Rank = ADC_RANK_NONE;
+	sConf.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+	if (HAL_ADC_ConfigChannel(&hadc, &sConf) != HAL_OK) {
+		Error_Handler();
+	}
+
 	qog_gw_pwr_iob_enable();
 }
 void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
 		uint8_t * configBytes) {
 }
 double __attribute__((weak)) DataSourceNumberRead(uint8_t channelNumber) {
+	uint32_t val = 0;
+	HAL_ADC_Start(&hadc);
+	if (HAL_ADC_PollForConversion(&hadc, 10) == HAL_OK) {
+		val = HAL_ADC_GetValue(&hadc);
+		HAL_ADC_Stop(&hadc);
+
+#define TEMP110_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FFFF7C2))
+#define TEMP30_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FFFF7B8))
+#define VDD_CALIB ((uint16_t) (330))
+#define VDD_APPLI ((uint16_t) (330))
+
+		double temperature; /* will contain the temperature in degrees Celsius */
+		temperature = (((double) val * VDD_APPLI / VDD_CALIB)
+				- (int32_t) *TEMP30_CAL_ADDR);
+		temperature = temperature * (int32_t) (110 - 30);
+		temperature = temperature
+				/ (int32_t) (*TEMP110_CAL_ADDR - *TEMP30_CAL_ADDR);
+		temperature = temperature + 30;
+		temperature-=57;
+		return temperature;
+	}
+
 	uint8_t dasd[2] = { 0, 0 };
 	if (HAL_I2C_Mem_Read(&hi2c2, 0x40, 0xE5, 1, dasd, 2, 100) != HAL_OK)
 		return m_gateway->TimeStamp;
