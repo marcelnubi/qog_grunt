@@ -184,7 +184,7 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 			sprintf((char *) m_gatewayInst->WLANConnection.WLAN_PSK, "%s",
 					pstrProvInfo->au8Password);
 			m_gatewayInst->WLANConnection.WLAN_AUTH = pstrProvInfo->u8SecType;
-
+			m_gatewayInst->WLANConnection.valid = true;
 			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 		}
 	}
@@ -274,8 +274,7 @@ static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
 static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst) {
 	m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 
-	if (m_gatewayInst->WLANConnection.WLAN_SSID != NULL
-			&& m_gatewayInst->WLANConnection.WLAN_PSK != NULL)
+	if (m_gatewayInst->WLANConnection.valid)
 		m2m_wifi_connect((char*) m_gatewayInst->WLANConnection.WLAN_SSID,
 				strlen((char*) m_gatewayInst->WLANConnection.WLAN_SSID),
 				(tenuM2mSecType) m_gatewayInst->WLANConnection.WLAN_AUTH,

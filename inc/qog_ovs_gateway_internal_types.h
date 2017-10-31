@@ -63,6 +63,7 @@ typedef struct {
 	uint8_t WLAN_SSID[33];
 	uint8_t WLAN_PSK[63];
 	uint8_t WLAN_AUTH;
+	bool valid;
 } WLANConnectionParams;
 
 typedef struct {
