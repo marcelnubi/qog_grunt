@@ -13,6 +13,7 @@
 #include "string.h"
 
 #include "qog_gateway_config.h"
+#include "qog_gateway_system.h"
 #include "qog_ovs_gateway_internal_types.h"
 
 #include "winc_1500_lib/driver/include/m2m_wifi.h"
@@ -31,13 +32,13 @@ void HAL_Delay(uint32_t ms) {
 	osDelay(ms);
 }
 
-
 static Gateway m_gateway;
 
 static void gw_init_gateway() {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
 	//TODO Ler Gateway Id URI
+	qog_gw_sys_getUri(m_gateway.Id.x);
 	//TODO Retrive WLAN config
 	sprintf((char *) m_gateway.WLANConnection.WLAN_SSID, "Qogni_2.4G");
 	sprintf((char *) m_gateway.WLANConnection.WLAN_PSK, "qognata33");
@@ -48,7 +49,6 @@ static void gw_init_gateway() {
 	m_gateway.BrokerParams.HostPort = OVS_BROKER_PORT;
 	sprintf((char*) m_gateway.BrokerParams.Username, "admin");
 	sprintf((char*) m_gateway.BrokerParams.Password, "qognata");
-
 
 	//TODO Sync Channel/Edge
 	m_gateway.DataChannels[0].Enabled = true;
