@@ -152,14 +152,16 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 		if (pstrWifiState->u8CurrState == M2M_WIFI_CONNECTED) {
 			m2m_wifi_request_dhcp_client();
 		} else if (pstrWifiState->u8CurrState == M2M_WIFI_DISCONNECTED) {
-			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
+			if (m_gatewayInst->Status == GW_WLAN_CONNECTED)
+				m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 		}
 
 	}
 		break;
 	case M2M_WIFI_REQ_DHCP_CONF: {
 //		tstrM2MIPConfig *conf = (tstrM2MIPConfig*) pvMsg;
-		m_gatewayInst->Status = GW_WLAN_CONNECTED;
+		if (m_gatewayInst->Status == GW_WLAN_DISCONNECTED)
+			m_gatewayInst->Status = GW_WLAN_CONNECTED;
 		/* Obtain the IP Address by network name */
 
 	}
@@ -168,12 +170,24 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 		m2m_wifi_request_dhcp_client();
 	}
 		break;
-//	case M2M_WIFI_RESP_GET_SYS_TIME:
-//	{
-////		tstrSystemTime * time = (tstrSystemTime*) pvMsg;
-////		uint8_t asd = 3;
-////		asd++;
-//	}
+	case M2M_WIFI_RESP_GET_SYS_TIME: {
+		tstrSystemTime * time = (tstrSystemTime*) pvMsg;
+	}
+		break;
+	case M2M_WIFI_RESP_PROVISION_INFO: {
+		tstrM2MProvisionInfo *pstrProvInfo = (tstrM2MProvisionInfo *) pvMsg;
+		printf("wifi_cb: M2M_WIFI_RESP_PROVISION_INFO.\r\n");
+
+		if (pstrProvInfo->u8Status == M2M_SUCCESS) {
+			sprintf((char *) m_gatewayInst->WLANConnection.WLAN_SSID, "%s",
+					pstrProvInfo->au8SSID);
+			sprintf((char *) m_gatewayInst->WLANConnection.WLAN_PSK, "%s",
+					pstrProvInfo->au8Password);
+			m_gatewayInst->WLANConnection.WLAN_AUTH = pstrProvInfo->u8SecType;
+
+			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
+		}
+	}
 		break;
 	default: {
 		break;
@@ -260,10 +274,15 @@ static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
 static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst) {
 	m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 
-	m2m_wifi_connect((char*) m_gatewayInst->WLANConnection.WLAN_SSID,
-			strlen((char*) m_gatewayInst->WLANConnection.WLAN_SSID),
-			(tenuM2mSecType) m_gatewayInst->WLANConnection.WLAN_AUTH,
-			(char*) m_gatewayInst->WLANConnection.WLAN_PSK, M2M_WIFI_CH_ALL);
+	if (m_gatewayInst->WLANConnection.WLAN_SSID != NULL
+			&& m_gatewayInst->WLANConnection.WLAN_PSK != NULL)
+		m2m_wifi_connect((char*) m_gatewayInst->WLANConnection.WLAN_SSID,
+				strlen((char*) m_gatewayInst->WLANConnection.WLAN_SSID),
+				(tenuM2mSecType) m_gatewayInst->WLANConnection.WLAN_AUTH,
+				(char*) m_gatewayInst->WLANConnection.WLAN_PSK,
+				M2M_WIFI_CH_ALL);
+	else
+		m2m_wifi_default_connect();
 	GatewayWaitForStatusChange(m_gatewayInst, GW_WLAN_CONNECTED,
 			TIMEOUT_WIFI_WLAN_CONNECT, TASK_PERIOD_MS_WIFI);
 	if (m_gatewayInst->Status != GW_WLAN_CONNECTED)
@@ -351,13 +370,10 @@ void GatewaySocketInit() {
 	registerSocketCallback(socket_cb, dns_resolve_cb);
 }
 
-qog_Task WifiTaskImpl(Gateway * gwInst) {
-	m_gatewayInst = gwInst;
-
+void wifiInit() {
 	tstrWifiInitParam param;
 	int8_t ret;
-	memset((uint8_t *) &param, 0, sizeof(tstrWifiInitParam));
-
+	memset((uint8_t*) &param, 0, sizeof(tstrWifiInitParam));
 	qog_gw_pwr_wifi_disable();
 	HAL_Delay(200);
 	qog_gw_pwr_wifi_enable();
@@ -371,6 +387,16 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 		//TODO Debug port out
 	}
 	GatewaySocketInit();
+}
+
+qog_Task WifiTaskImpl(Gateway * gwInst) {
+	m_gatewayInst = gwInst;
+
+	WLANConnectionParams asd = { 0 };
+	m_gatewayInst->WLANConnection = asd;
+
+	wifiInit();
+
 	for (;;) {
 		vTaskDelay(TASK_PERIOD_MS_WIFI);
 		switch (m_gatewayInst->Status) {
@@ -378,8 +404,27 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
 			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 			break;
-		case GW_AP_CONFIG_MODE:
+		case GW_AP_CONFIG_MODE: {
+			wifiInit();
+			tstrM2MAPConfig apConfig = { "WINC1500_00:00", 1, 0,
+			WEP_40_KEY_STRING_SIZE, "qognata33", (uint8) M2M_WIFI_SEC_OPEN,
+					SSID_MODE_VISIBLE };
+
+			m2m_wifi_set_device_name((uint8_t *) "WINC1500_00:00", 3);
+			apConfig.au8DHCPServerIP[0] = 0xC0; /* 192 */
+			apConfig.au8DHCPServerIP[1] = 0xA8; /* 168 */
+			apConfig.au8DHCPServerIP[2] = 0x01; /* 1 */
+			apConfig.au8DHCPServerIP[3] = 0x01; /* 1 */
+			m2m_wifi_start_provision_mode((tstrM2MAPConfig *) &apConfig,
+					(char *) "config.qogni.com", 1);
+
+			m_gatewayInst->Status = GW_AP_CONFIG_MODE_STDBY;
+		}
 			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
+			break;
+		case GW_AP_CONFIG_MODE_STDBY: {
+			m2m_wifi_handle_events(NULL);
+		}
 			break;
 		case GW_BROKER_DNS_RESOLVED:
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
@@ -395,7 +440,6 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_BROKER_SOCKET_OPEN: {
-//			m2m_wifi_handle_events(NULL);
 			uint8_t qBuff[OVS_RX_SOCKET_BUFFER_SIZE];
 			uint16_t qBuffSize = 0;
 			uint16_t qSize = uxQueueMessagesWaiting(
@@ -430,14 +474,17 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_WLAN_DISCONNECTED:
+			wifiInit();
 			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK)
 				m_gatewayInst->Status = GW_WLAN_CONNECTED;
+			else
+				m_gatewayInst->Status = GW_AP_CONFIG_MODE;
 			//TODO retry counter
 			break;
 		case GW_ERROR:
-//			while (1) {
-//				HAL_Delay(20);
-//			}
+			while (1) {
+				HAL_Delay(20);
+			}
 //			nm_bsp_{init();
 //			ret = m2m_wifi_init(&param);
 //			socketInit();

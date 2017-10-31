@@ -60,7 +60,7 @@ typedef struct {
 } qog_gateway_task;
 
 typedef struct {
-	uint8_t WLAN_SSID[32];
+	uint8_t WLAN_SSID[33];
 	uint8_t WLAN_PSK[63];
 	uint8_t WLAN_AUTH;
 } WLANConnectionParams;
@@ -79,6 +79,7 @@ typedef enum {
 	GW_ERROR = -1,
 	GW_STARTING,
 	GW_AP_CONFIG_MODE,
+	GW_AP_CONFIG_MODE_STDBY,
 	GW_WLAN_DISCONNECTED,
 	GW_WLAN_CONNECTED,
 	GW_BROKER_DNS_RESOLVED,

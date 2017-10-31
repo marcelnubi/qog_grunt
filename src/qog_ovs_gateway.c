@@ -39,10 +39,6 @@ static void gw_init_gateway() {
 	//TODO Retrieve NV Memory config
 	//TODO Ler Gateway Id URI
 	qog_gw_sys_getUri(m_gateway.Id.x);
-	//TODO Retrive WLAN config
-	sprintf((char *) m_gateway.WLANConnection.WLAN_SSID, "Qogni_2.4G");
-	sprintf((char *) m_gateway.WLANConnection.WLAN_PSK, "qognata33");
-	m_gateway.WLANConnection.WLAN_AUTH = M2M_WIFI_SEC_WPA_PSK;
 
 	//TODO Retrieve MQTT Broker config
 	sprintf((char*) m_gateway.BrokerParams.HostName, OVS_BROKER_HOST);
