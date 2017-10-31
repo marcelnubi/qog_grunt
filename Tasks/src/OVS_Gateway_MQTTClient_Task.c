@@ -65,11 +65,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 	MQTTPacket_connectData conn = MQTTPacket_connectData_initializer;
 	conn.username.cstring = (char*) gw->BrokerParams.Username;
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
-
-	uint8_t gId[12];
-	sprintf((char *) gId, "%lu%lu%lu", gw->Id.x[0], gw->Id.x[1], gw->Id.x[2]); //TODO Use memset instead of sprintf
-	//conn.clientID.cstring = (char*) gId;
-	conn.clientID.cstring = "Rodrigo Vitar";
+	conn.clientID.cstring = (char*) gw->Id.x;
 	conn.cleansession = false;
 	conn.keepAliveInterval = 30;
 
@@ -102,7 +98,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst)
 					msg.qos = 0;
 					msg.payload = "Hello";
 					msg.payloadlen = 5;
-					MQTTPublish(&client,"/",&msg);
+					MQTTPublish(&client, "/", &msg);
 				}
 				else
 				{
