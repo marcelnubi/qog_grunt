@@ -126,16 +126,6 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	//Initialise Channels and Measurement
 	MeasurementSchedule.Channels = gwInst->DataChannels;
 
-	//TODO init in DataSource Impl
-	MeasurementSchedule.Channels[0].Enabled = true;
-	MeasurementSchedule.Channels[0].Id = 24;
-
-	MeasurementSchedule.Channels[1].Enabled = true;
-	MeasurementSchedule.Channels[1].Id = 4;
-
-	MeasurementSchedule.Channels[2].Enabled = true;
-	MeasurementSchedule.Channels[2].Id = 8;
-
 	xLastWakeTime = xTaskGetTickCount();
 
 	for (;;) {
