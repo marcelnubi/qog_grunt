@@ -9,10 +9,12 @@
 #define QOG_OVS_GATEWAY_INTERNAL_TYPES_H_
 
 #include "qog_gateway_config.h"
-#include "OVS_Channel.pb.h"
 #include "pb_encode.h"
 #include "pb_decode.h"
+
+#include "OVS_Channel.pb.h"
 #include "OVS_ChannelNumberData.pb.h"
+#include "OVS_EdgeId.pb.h"
 
 #include <stdint.h>
 /*
@@ -75,6 +77,7 @@ typedef struct {
 } BrokerParams;
 
 typedef OVS_Channel DataChannel;
+typedef OVS_EdgeId Edge;
 
 typedef enum {
 	GW_ERROR = -1,
@@ -99,17 +102,30 @@ typedef struct {
 	qog_gateway_task * LocalStorageTask;
 } GatewayTasks;
 
+typedef struct {
+	void (*gwUpdateEdge)(OVS_Channel *);
+	void (*gwGetEdgeList)();
+} GatewayCallbacks;
+
 struct Gateway {
 	GatewayId Id;
+
 	WLANConnectionParams WLANConnection;
 	BrokerParams BrokerParams;
-	DataChannel DataChannels[MAX_DATA_CHANNELS];
+
+	DataChannel EdgeChannels[MAX_DATA_CHANNELS];
+
 	GatewayStatus Status;
 	GatewayTasks Tasks;
+
 	qog_DataSource_queues DataSourceQs;
 	qog_Queue SocketRxQueue;
 	qog_Queue SocketTxQueue;
+
 	OVS_ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
+
+	GatewayCallbacks CB;
+
 	qog_Mutex MQTTMutex;
 	qog_Mutex LocalStorageMutex;
 	uint32_t TimeStamp;
