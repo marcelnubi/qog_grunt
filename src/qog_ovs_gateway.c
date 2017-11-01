@@ -47,14 +47,14 @@ static void gw_init_gateway() {
 	sprintf((char*) m_gateway.BrokerParams.Password, "qognata");
 
 	//TODO Sync Channel/Edge
-	m_gateway.DataChannels[0].Enabled = true;
-	m_gateway.DataChannels[0].Id = 24;
+	m_gateway.EdgeChannels[0].Enabled = true;
+	m_gateway.EdgeChannels[0].Id = 24;
 
-	m_gateway.DataChannels[1].Enabled = true;
-	m_gateway.DataChannels[1].Id = 4;
+	m_gateway.EdgeChannels[1].Enabled = true;
+	m_gateway.EdgeChannels[1].Id = 4;
 
-	m_gateway.DataChannels[2].Enabled = true;
-	m_gateway.DataChannels[2].Id = 8;
+	m_gateway.EdgeChannels[2].Enabled = true;
+	m_gateway.EdgeChannels[2].Id = 8;
 
 	m_gateway.MQTTMutex = xSemaphoreCreateMutex();
 	m_gateway.LocalStorageMutex = xSemaphoreCreateMutex();

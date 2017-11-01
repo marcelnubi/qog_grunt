@@ -124,7 +124,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	DataSourceInit();
 
 	//Initialise Channels and Measurement
-	MeasurementSchedule.Channels = gwInst->DataChannels;
+	MeasurementSchedule.Channels = gwInst->EdgeChannels;
 
 	xLastWakeTime = xTaskGetTickCount();
 
