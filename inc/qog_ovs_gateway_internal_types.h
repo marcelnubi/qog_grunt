@@ -76,7 +76,7 @@ typedef struct {
 	uint8_t Password[32];
 } BrokerParams;
 
-typedef OVS_Channel DataChannel;
+typedef OVS_Channel EdgeChannel;
 typedef OVS_EdgeId Edge;
 
 typedef enum {
@@ -113,7 +113,7 @@ struct Gateway {
 	WLANConnectionParams WLANConnection;
 	BrokerParams BrokerParams;
 
-	DataChannel EdgeChannels[MAX_DATA_CHANNELS];
+	EdgeChannel EdgeChannels[MAX_DATA_CHANNELS];
 
 	GatewayStatus Status;
 	GatewayTasks Tasks;
