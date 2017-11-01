@@ -40,11 +40,6 @@ static enum {
 	MQTT_CLIENT_DISCONNECTED
 } MQTTClientState;
 
-void MQTTHandler_Info(MessageData * data) {
-	uint32_t asd = 123;
-	asd++;
-}
-
 static void MessageHandler(MessageData * data) {
 
 	//Edge Sync
