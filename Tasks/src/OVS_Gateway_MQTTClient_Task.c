@@ -29,7 +29,8 @@ Gateway* gw = NULL;
 
 //Private Functions
 static void publishEdgelist();
-static void publishAck();
+static void publishEdgeAdd();
+static void publishEdgeDrop();
 static void publishData();
 
 static enum {
@@ -52,14 +53,12 @@ static void MessageHandler(MessageData * data) {
 		}
 	}
 
-	eval = strstr(data->topicName->lenstring.data, "List");
+	eval = strstr(data->topicName->lenstring.data, "GetList");
 	if (eval != NULL) {
 		if (gw->CB.gwGetEdgeList != NULL)
 			gw->CB.gwGetEdgeList();
 	}
 }
-
-
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	pb_ostream_t ostream;
@@ -135,11 +134,14 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 				GatewayCommands command = NOP;
 				xQueueReceive(gw->CommandQueue, &command, 0);
 				switch (command) {
-				case REQ_EDGE_LIST:
+				case EDGE_LIST:
 					publishEdgelist();
 					break;
-				case REQ_EDGE_SYNC:
-					publishAck();
+				case EDGE_ADD:
+					publishEdgeAdd();
+					break;
+				case EDGE_DROP:
+					publishEdgeDrop();
 					break;
 				default:
 					break;
@@ -190,11 +192,31 @@ void publishData() {
 	}
 }
 
-static void publishEdgelist() {
+void publishEdgelist() {
+	OVS_EdgeList list = OVS_EdgeList_init_zero;
+
+	for (uint8_t edx = 0; edx < MAX_DATA_CHANNELS; edx++) {
+
+		if (gw->EdgeChannels[edx].EdgeId.Type != OVS_EdgeType_NULL_EDGE) {
+			list.List[edx] = gw->EdgeChannels[edx].EdgeId;
+			list.Current++;
+
+			if (list.Current + 1 == sizeof(list.List) / sizeof(list.List[0])) {
+				//TODO publish com retry
+
+				//TODO inc total
+				list.Total++;
+				//TODO reset current
+				list.Current = 0;
+			}
+		}
+	}
 
 }
-static void publishAck() {
 
+void publishEdgeAdd() {
+}
+void publishEdgeDrop() {
 }
 
 #endif

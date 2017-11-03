@@ -81,8 +81,9 @@ typedef OVS_EdgeId Edge;
 
 typedef enum {
 	NOP = 0,
-	REQ_EDGE_LIST,
-	REQ_EDGE_SYNC
+	EDGE_ADD,
+	EDGE_DROP,
+	EDGE_LIST
 } GatewayCommands;
 
 typedef enum {
