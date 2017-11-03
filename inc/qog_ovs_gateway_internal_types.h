@@ -80,6 +80,12 @@ typedef OVS_Channel EdgeChannel;
 typedef OVS_EdgeId Edge;
 
 typedef enum {
+	NOP = 0,
+	REQ_EDGE_LIST,
+	REQ_EDGE_SYNC
+} GatewayCommands;
+
+typedef enum {
 	GW_ERROR = -1,
 	GW_STARTING,
 	GW_AP_CONFIG_MODE,
@@ -119,6 +125,7 @@ struct Gateway {
 	GatewayTasks Tasks;
 
 	qog_DataSource_queues DataSourceQs;
+	qog_Queue CommandQueue;
 	qog_Queue SocketRxQueue;
 	qog_Queue SocketTxQueue;
 

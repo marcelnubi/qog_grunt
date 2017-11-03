@@ -84,6 +84,8 @@ static void gw_init_shared_queues() {
 	m_gateway.SocketTxQueue = xQueueCreate(TCP_TX_SOCKET_BUFFER_SIZE,
 			sizeof(uint8_t));
 
+	m_gateway.CommandQueue = xQueueCreate(OVS_COMMAND_QUEUE_SIZE,
+			sizeof(uint8_t));
 }
 
 static void gw_init_tasks() {

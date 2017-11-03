@@ -21,11 +21,16 @@ qog_gateway_task MQTTPublisherTaskDef = { &MQTTPublisherTaskImpl,
 MQTT_PUBLISHER_TASK_HEAP, NULL };
 //-------- Gateway Interface - END
 
+//Variables
 MQTTClient client = { 0 };
 Network network = { 0 };
-
 uint8_t rxBuf[MQTT_RX_BUFFER_SIZE], txBuf[MQTT_TX_BUFFER_SIZE];
 Gateway* gw = NULL;
+
+//Private Functions
+static void publishEdgelist();
+static void publishAck();
+static void publishData();
 
 static enum {
 	MQTT_CLIENT_UNNINITIALIZED = 0,
@@ -47,12 +52,14 @@ static void MessageHandler(MessageData * data) {
 		}
 	}
 
-	eval = strstr(data->topicName->lenstring.data, "getList");
+	eval = strstr(data->topicName->lenstring.data, "List");
 	if (eval != NULL) {
 		if (gw->CB.gwGetEdgeList != NULL)
 			gw->CB.gwGetEdgeList();
 	}
 }
+
+
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	pb_ostream_t ostream;
@@ -66,7 +73,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	network.SockTxQueue = gw->SocketTxQueue;
 	NetworkInit(&network);
 	MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
-			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
+	MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 
 	MQTTPacket_connectData conn = MQTTPacket_connectData_initializer;
 	conn.username.cstring = (char*) gw->BrokerParams.Username;
@@ -80,7 +87,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		switch (MQTTClientState) {
 		case MQTT_CLIENT_UNNINITIALIZED: {
 			MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
-					MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
+			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
 		}
 			break;
@@ -119,40 +126,25 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 
 			while (uxQueueSpacesAvailable(gw->DataSourceQs.DataUsedQueue)
 					< OVS_NUMBER_DATA_BUFFER_SIZE) {
-				uint8_t idx = 0;
-				uint8_t msgBuf[OVS_ChannelNumberData_size];
-
-				xQueueReceive(gw->DataSourceQs.DataUsedQueue, &idx, 0);
-
-				OVS_ChannelNumberData * sample = &gw->DataSampleBuffer[idx];
-				sample->has_numData = true;
-
-				ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
-				pb_encode(&ostream, OVS_ChannelNumberData_fields, sample);
-				msg.qos = QOS0;
-				msg.payload = msgBuf;
-				msg.payloadlen = ostream.bytes_written;
-				sprintf((char*) &topic, "/channel/%lu/protobuf/data",
-						sample->channelId);
-
-				uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
-				while (retry > 0) {
-					if (!client.isconnected) {
-						MQTTClientState = MQTT_CLIENT_DISCONNECTED;
-						break;
-					}
-					if (MQTTPublish(&client, (char*) topic, &msg)
-							== MQTT_SUCCESS) {
-						xQueueSend(gw->DataSourceQs.DataAvailableQueue, &idx,
-								0);
-						break;
-					}
-					retry--;
-					vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
-				}
-
+				publishData();
 			}
 
+			//TODO ler fila de comandos OVS
+			while (uxQueueSpacesAvailable(gw->CommandQueue)
+					< OVS_NUMBER_DATA_BUFFER_SIZE) {
+				GatewayCommands command = NOP;
+				xQueueReceive(gw->CommandQueue, &command, 0);
+				switch (command) {
+				case REQ_EDGE_LIST:
+					publishEdgelist();
+					break;
+				case REQ_EDGE_SYNC:
+					publishAck();
+					break;
+				default:
+					break;
+				}
+			}
 #if defined(MQTT_TASK)
 			MutexUnlock(&gw->MQTTMutex);
 #endif
@@ -164,6 +156,45 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 
 	}
 	return 0;
+}
+
+//Private functions
+
+void publishData() {
+	uint8_t idx = 0;
+	uint8_t msgBuf[OVS_ChannelNumberData_size];
+	uint8_t topic[128];
+	MQTTMessage msg;
+
+	xQueueReceive(gw->DataSourceQs.DataUsedQueue, &idx, 0);
+	OVS_ChannelNumberData* sample = &gw->DataSampleBuffer[idx];
+	sample->has_numData = true;
+	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
+	pb_encode(&ostream, OVS_ChannelNumberData_fields, sample);
+	msg.qos = QOS0;
+	msg.payload = msgBuf;
+	msg.payloadlen = ostream.bytes_written;
+	sprintf((char*) &topic, "/channel/%lu/protobuf/data", sample->channelId);
+	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
+	while (retry > 0) {
+		if (!client.isconnected) {
+			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+			break;
+		}
+		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
+			xQueueSend(gw->DataSourceQs.DataAvailableQueue, &idx, 0);
+			break;
+		}
+		retry--;
+		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
+	}
+}
+
+static void publishEdgelist() {
+
+}
+static void publishAck() {
+
 }
 
 #endif
