@@ -10,13 +10,6 @@
 #include "MQTTClient.h"
 #include "MQTTPacket.h"
 
-#define MQTT_TIMEOUT_MS 1000
-#define MQTT_BUFFER_SIZE 512
-#define MQTT_CONNECT_RETRY_DELAY_MS 5000
-#define MQTT_CLIENT_PUBLISH_RETRY 5
-#define MQTT_CLIET_PUBLISH_RETRY_DELAY_MS 100
-#define MQTT_TASK_LOOP_MS 100
-
 //-------- Gateway Interface - START
 #include "qog_ovs_gateway_internal_types.h"
 
@@ -31,7 +24,7 @@ MQTT_PUBLISHER_TASK_HEAP, NULL };
 MQTTClient client = { 0 };
 Network network = { 0 };
 
-uint8_t rxBuf[MQTT_BUFFER_SIZE], txBuf[MQTT_BUFFER_SIZE];
+uint8_t rxBuf[MQTT_RX_BUFFER_SIZE], txBuf[MQTT_TX_BUFFER_SIZE];
 Gateway* gw = NULL;
 
 static enum {
@@ -72,8 +65,8 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	network.SockRxQueue = gw->SocketRxQueue;
 	network.SockTxQueue = gw->SocketTxQueue;
 	NetworkInit(&network);
-	MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf, MQTT_BUFFER_SIZE,
-			rxBuf, MQTT_BUFFER_SIZE);
+	MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
+			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 
 	MQTTPacket_connectData conn = MQTTPacket_connectData_initializer;
 	conn.username.cstring = (char*) gw->BrokerParams.Username;
@@ -87,7 +80,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		switch (MQTTClientState) {
 		case MQTT_CLIENT_UNNINITIALIZED: {
 			MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
-			MQTT_BUFFER_SIZE, rxBuf, MQTT_BUFFER_SIZE);
+					MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
 		}
 			break;

@@ -79,9 +79,9 @@ static void gw_init_shared_queues() {
 				100);
 	}
 
-	m_gateway.SocketRxQueue = xQueueCreate(OVS_RX_SOCKET_BUFFER_SIZE,
+	m_gateway.SocketRxQueue = xQueueCreate(TCP_RX_SOCKET_BUFFER_SIZE,
 			sizeof(uint8_t));
-	m_gateway.SocketTxQueue = xQueueCreate(OVS_TX_SOCKET_BUFFER_SIZE,
+	m_gateway.SocketTxQueue = xQueueCreate(TCP_TX_SOCKET_BUFFER_SIZE,
 			sizeof(uint8_t));
 
 }

@@ -47,6 +47,8 @@ static struct {
 	SOCKET number;
 } Sockets[MAX_OPEN_SOCKETS];
 
+static uint8_t qBuff[TCP_RX_SOCKET_BUFFER_SIZE];
+
 uint32_t resolvedHostIp = 0x0;
 
 Gateway * m_gatewayInst = 0;
@@ -439,7 +441,6 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_BROKER_SOCKET_OPEN: {
-			uint8_t qBuff[OVS_RX_SOCKET_BUFFER_SIZE];
 			uint16_t qBuffSize = 0;
 			uint16_t qSize = uxQueueMessagesWaiting(
 					m_gatewayInst->SocketTxQueue);
@@ -453,7 +454,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 				send(Sockets[MQTT_SOCKET].number, qBuff, qBuffSize, 0);
 
 			recv(Sockets[MQTT_SOCKET].number, qBuff,
-					sizeof(OVS_RX_SOCKET_BUFFER_SIZE), 0);
+					sizeof(TCP_RX_SOCKET_BUFFER_SIZE), 0);
 
 			m2m_wifi_handle_events(NULL);
 		}
