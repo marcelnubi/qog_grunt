@@ -80,11 +80,13 @@ typedef OVS_Channel EdgeChannel;
 typedef OVS_EdgeId Edge;
 
 typedef enum {
-	NOP = 0,
-	EDGE_ADD,
-	EDGE_DROP,
-	EDGE_LIST
+	NOP = 0, EDGE_ADD, EDGE_DROP, EDGE_LIST
 } GatewayCommands;
+
+typedef struct {
+	GatewayCommands Command;
+	Edge *Edge;
+} EdgeCommand;
 
 typedef enum {
 	GW_ERROR = -1,

@@ -28,9 +28,9 @@ uint8_t rxBuf[MQTT_RX_BUFFER_SIZE], txBuf[MQTT_TX_BUFFER_SIZE];
 Gateway* gw = NULL;
 
 //Private Functions
-static void publishEdgelist();
-static void publishEdgeAdd();
-static void publishEdgeDrop();
+static void publishEdgelist(EdgeCommand*);
+static void publishEdgeAdd(EdgeCommand*);
+static void publishEdgeDrop(EdgeCommand*);
 static void publishData();
 
 static enum {
@@ -131,17 +131,17 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			//TODO ler fila de comandos OVS
 			while (uxQueueSpacesAvailable(gw->CommandQueue)
 					< OVS_NUMBER_DATA_BUFFER_SIZE) {
-				GatewayCommands command = NOP;
-				xQueueReceive(gw->CommandQueue, &command, 0);
-				switch (command) {
+				EdgeCommand dt = {};
+				xQueueReceive(gw->CommandQueue, &dt, 0);
+				switch (dt.Command) {
 				case EDGE_LIST:
-					publishEdgelist();
+					publishEdgelist(&dt);
 					break;
 				case EDGE_ADD:
-					publishEdgeAdd();
+					publishEdgeAdd(&dt);
 					break;
 				case EDGE_DROP:
-					publishEdgeDrop();
+					publishEdgeDrop(&dt);
 					break;
 				default:
 					break;
@@ -192,7 +192,7 @@ void publishData() {
 	}
 }
 
-void publishEdgelist() {
+void publishEdgelist(EdgeCommand* dt) {
 	OVS_EdgeList list = OVS_EdgeList_init_zero;
 
 	for (uint8_t edx = 0; edx < MAX_DATA_CHANNELS; edx++) {
@@ -214,9 +214,9 @@ void publishEdgelist() {
 
 }
 
-void publishEdgeAdd() {
+void publishEdgeAdd(EdgeCommand* dt) {
 }
-void publishEdgeDrop() {
+void publishEdgeDrop(EdgeCommand* dt) {
 }
 
 #endif
