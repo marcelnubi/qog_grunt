@@ -108,9 +108,16 @@ static void gw_init_tasks() {
 			osThread(DataSourceTask), &m_gateway);
 }
 
-void qog_ovs_run() {
+//RTOS Task
+qog_Task GruntTaskImpl(Gateway * gwInst) {
+
 	gw_init_gateway();
 	gw_init_tasks();
+
+	for (;;) {
+
+	}
+
 }
 
 //ISR
@@ -120,6 +127,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	}
 }
 
+//Debug helpers
 #if defined(DEBUG)
 void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName) {
 	while (1) {
