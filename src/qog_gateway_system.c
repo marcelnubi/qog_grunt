@@ -6,6 +6,7 @@
  */
 
 #include "qog_gateway_system.h"
+#include "cmsis_os.h"
 
 #if defined (STM32F091xC)
 #include "stm32f0xx.h"
@@ -21,4 +22,9 @@ qog_gw_error_t qog_gw_sys_getUri(uint8_t * id) {
 	id[25] = '\0';
 
 	return GW_e_OK;
+}
+
+//Replacing Sync delay with osDelay
+void HAL_Delay(uint32_t ms) {
+	osDelay(ms);
 }

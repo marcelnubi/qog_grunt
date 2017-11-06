@@ -80,7 +80,7 @@ typedef OVS_Channel EdgeChannel;
 typedef OVS_EdgeId Edge;
 
 typedef enum {
-	NOP = 0, EDGE_ADD, EDGE_DROP, EDGE_LIST
+	NOP = 0, EDGE_ADD, EDGE_DROP, EDGE_LIST, EDGE_UPDATE
 } GatewayCommands;
 
 typedef struct {
@@ -114,6 +114,8 @@ typedef struct {
 typedef struct {
 	void (*gwUpdateEdge)(OVS_Channel *);
 	void (*gwGetEdgeList)();
+	void (*gwAddEdge)(Edge*);
+	void (*gwDropEdge)(Edge*);
 } GatewayCallbacks;
 
 struct Gateway {
