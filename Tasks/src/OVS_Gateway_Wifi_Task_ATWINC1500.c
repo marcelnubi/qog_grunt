@@ -13,6 +13,7 @@
 #include "qog_gateway_error_types.h"
 #include "qog_ovs_gateway_internal_types.h"
 #include "qog_gateway_power.h"
+#include "qog_gateway_system.h"
 
 #include "../inc/OVS_Gateway_Task.h"
 #include "driver/include/m2m_wifi.h"
@@ -22,11 +23,6 @@
 #include "string.h"
 
 //-------- Gateway Interface - START
-#define WIFI_TASK_HEAP 0x200
-static const int TIMEOUT_SOCKET_OPEN = 4000;
-static const int TIMEOUT_WIFI_WLAN_CONNECT = 5000;
-static const int TIMEOUT_WIFI_RESOLVE_HOST = 5000;
-static const uint16_t TASK_PERIOD_MS_WIFI = 100;
 static uint8_t NTP_Buffer[48];
 
 static const uint8_t MQTT_SOCKET = 0;
@@ -174,6 +170,7 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 		break;
 	case M2M_WIFI_RESP_GET_SYS_TIME: {
 		tstrSystemTime * time = (tstrSystemTime*) pvMsg;
+		//TODO update RTC
 	}
 		break;
 	case M2M_WIFI_RESP_PROVISION_INFO: {

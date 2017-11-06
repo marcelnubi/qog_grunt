@@ -27,10 +27,7 @@
 
 #include "gpio.h"
 
-//Replacing Sync delay with osDelay
-void HAL_Delay(uint32_t ms) {
-	osDelay(ms);
-}
+#define OVS_GRUNT_LOOP_MS 50
 
 static Gateway m_gateway;
 
@@ -111,11 +108,15 @@ static void gw_init_tasks() {
 //RTOS Task
 qog_Task GruntTaskImpl(Gateway * gwInst) {
 
+	TickType_t xLastWakeTime;
+	const TickType_t xFrequency = portTICK_PERIOD_MS * OVS_GRUNT_LOOP_MS;
+
 	gw_init_gateway();
 	gw_init_tasks();
 
+	xLastWakeTime = xTaskGetTickCount();
 	for (;;) {
-
+		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 	}
 
 }

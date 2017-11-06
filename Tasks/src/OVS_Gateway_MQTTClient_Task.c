@@ -31,6 +31,7 @@ Gateway* gw = NULL;
 static void publishEdgelist(EdgeCommand*);
 static void publishEdgeAdd(EdgeCommand*);
 static void publishEdgeDrop(EdgeCommand*);
+static void publishEdgeUpdate(EdgeCommand*);
 static void publishData();
 
 static enum {
@@ -42,7 +43,7 @@ static enum {
 static void MessageHandler(MessageData * data) {
 
 	//Edge Sync
-	char* eval = strstr(data->topicName->lenstring.data, "Sync");
+	char* eval = strstr(data->topicName->lenstring.data, "update");
 	if (eval != NULL) {
 		OVS_Channel newChannel = OVS_Channel_init_default;
 		pb_istream_t istream = pb_istream_from_buffer(data->message->payload,
@@ -61,9 +62,6 @@ static void MessageHandler(MessageData * data) {
 }
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
-	pb_ostream_t ostream;
-	MQTTMessage msg;
-	uint8_t topic[32];
 	uint8_t gwTopic[128];
 
 	gw = (Gateway*) gwInst;
@@ -131,7 +129,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			//TODO ler fila de comandos OVS
 			while (uxQueueSpacesAvailable(gw->CommandQueue)
 					< OVS_NUMBER_DATA_BUFFER_SIZE) {
-				EdgeCommand dt = {};
+				EdgeCommand dt = { };
 				xQueueReceive(gw->CommandQueue, &dt, 0);
 				switch (dt.Command) {
 				case EDGE_LIST:
@@ -143,6 +141,8 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 				case EDGE_DROP:
 					publishEdgeDrop(&dt);
 					break;
+				case EDGE_UPDATE:
+					publishEdgeUpdate(&dt);
 				default:
 					break;
 				}
@@ -218,5 +218,6 @@ void publishEdgeAdd(EdgeCommand* dt) {
 }
 void publishEdgeDrop(EdgeCommand* dt) {
 }
-
+void publishEdgeUpdate(EdgeCommand* dt) {
+}
 #endif
