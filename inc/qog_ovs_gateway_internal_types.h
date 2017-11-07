@@ -9,8 +9,11 @@
 #define QOG_OVS_GATEWAY_INTERNAL_TYPES_H_
 
 #include "qog_gateway_config.h"
+
 #include "pb_encode.h"
 #include "pb_decode.h"
+
+#include "rtc.h"
 
 #include "OVS_Channel.pb.h"
 #include "OVS_ChannelNumberData.pb.h"
@@ -28,6 +31,11 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+
+typedef struct{
+	RTC_TimeTypeDef Time;
+	RTC_DateTypeDef Date;
+}qog_DateTime;
 
 typedef SemaphoreHandle_t qog_Mutex;
 typedef TaskFunction_t qog_Task;

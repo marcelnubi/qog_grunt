@@ -110,6 +110,7 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 			 */
 			const uint32_t seventyYears = 2208988800UL;
 			m_gatewayInst->TimeStamp = secsSince1900 - seventyYears;
+
 			ret = close(Sockets[NTP_SOCKET].number);
 			if (ret == SOCK_ERR_NO_ERROR) {
 				Sockets[NTP_SOCKET].number = -1;
@@ -170,7 +171,16 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 		break;
 	case M2M_WIFI_RESP_GET_SYS_TIME: {
 		tstrSystemTime * time = (tstrSystemTime*) pvMsg;
-		//TODO update RTC
+		qog_DateTime dt;
+		dt.Time.Hours = time->u8Hour;
+		dt.Time.Minutes = time->u8Minute;
+		dt.Time.Seconds = time->u8Second;
+		dt.Date.Date = time->u8Day;
+		dt.Date.Month = time->u8Month;
+		dt.Date.Year = time->u16Year;
+
+		qog_gw_sys_setTime(&dt);
+		m_gatewayInst->TimeStamp = qog_gw_sys_getTimestamp();
 	}
 		break;
 	case M2M_WIFI_RESP_PROVISION_INFO: {
