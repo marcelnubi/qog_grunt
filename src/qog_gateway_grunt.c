@@ -36,6 +36,8 @@ void gwGetEdgeList();
 void gwAddEdge(Edge* ed);
 void gwDropEdge(Edge* ed);
 
+void GruntTaskImpl(void const * argument);
+
 void gw_init_gateway() {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
