@@ -177,10 +177,10 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 		dt.Time.Seconds = time->u8Second;
 		dt.Date.Date = time->u8Day;
 		dt.Date.Month = time->u8Month;
-		dt.Date.Year = time->u16Year;
+		dt.Date.Year = time->u16Year - 2000;
 
 		qog_gw_sys_setTime(&dt);
-		m_gatewayInst->TimeStamp = qog_gw_sys_getTimestamp();
+		//m_gatewayInst->TimeStamp = qog_gw_sys_getTimestamp();
 	}
 		break;
 	case M2M_WIFI_RESP_PROVISION_INFO: {
@@ -292,7 +292,7 @@ static qog_gw_error_t GatewayWLANConnect(Gateway* m_gatewayInst) {
 	else
 		m2m_wifi_default_connect();
 	GatewayWaitForStatusChange(m_gatewayInst, GW_WLAN_CONNECTED,
-			TIMEOUT_WIFI_WLAN_CONNECT, TASK_PERIOD_MS_WIFI);
+	TIMEOUT_WIFI_WLAN_CONNECT, TASK_PERIOD_MS_WIFI);
 	if (m_gatewayInst->Status != GW_WLAN_CONNECTED)
 		return GW_e_WLAN_ERROR;
 	return GW_e_OK;
@@ -304,7 +304,7 @@ static qog_gw_error_t GatewayResolveHost(Gateway* m_gatewayInst) {
 
 	gethostbyname((uint8_t*) m_gatewayInst->BrokerParams.HostName);
 	GatewayWaitForStatusChange(m_gatewayInst, GW_BROKER_DNS_RESOLVED,
-			TIMEOUT_WIFI_RESOLVE_HOST, TASK_PERIOD_MS_WIFI);
+	TIMEOUT_WIFI_RESOLVE_HOST, TASK_PERIOD_MS_WIFI);
 	if (m_gatewayInst->Status != GW_BROKER_DNS_RESOLVED)
 		return GW_e_HOST_ERROR;
 	return GW_e_OK;
@@ -473,7 +473,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 		case GW_WLAN_CONNECTED:
 			//TODO retry counter
 			if (GatewayGetSystemTimeNTP(TIMEOUT_SOCKET_OPEN,
-					TASK_PERIOD_MS_WIFI) != GW_e_OK)
+			TASK_PERIOD_MS_WIFI) != GW_e_OK)
 				break;
 			//TODO update RTC com timestamp do gateway
 			if (GatewayResolveHost(m_gatewayInst) == GW_e_OK)
@@ -489,14 +489,8 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_ERROR:
-			while (1) {
-				HAL_Delay(20);
-			}
-//			nm_bsp_{init();
-//			ret = m2m_wifi_init(&param);
-//			socketInit();
-//			registerSocketCallback(socket_cb, dns_resolve_cb);
-//			m_gatewayInst->Status = GW_STARTING;
+			HAL_Delay(1000);
+			m_gatewayInst->Status = GW_STARTING;
 			break;
 //		default:
 //			break;
