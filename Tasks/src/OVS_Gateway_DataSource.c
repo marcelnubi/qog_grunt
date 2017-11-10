@@ -17,10 +17,12 @@
 static Gateway * m_gateway;
 static double currentVal = 0;
 
-void __attribute__((weak)) DataSourceInit() {
+void __attribute__((weak)) DataSourceInit(Gateway * gw) {
 	uint32_t asd = 123;
 	asd++;
 	asd = 12 + asd;
+
+	m_gateway = gw;
 
 	ADC_ChannelConfTypeDef sConf;
 
@@ -37,6 +39,7 @@ void __attribute__((weak)) DataSourceInit() {
 	if (HAL_ADC_ConfigChannel(&hadc, &sConf) != HAL_OK) {
 		Error_Handler();
 	}
+
 
 	qog_gw_pwr_iob_enable();
 }
@@ -121,7 +124,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	const TickType_t xFrequency = portTICK_PERIOD_MS * 1000; //1000ms wait
 
 	// Initialise the xLastWakeTime variable with the current time.
-	DataSourceInit();
+	DataSourceInit(m_gateway);
 
 	//Initialise Channels and Measurement
 	MeasurementSchedule.Channels = gwInst->EdgeChannels;
