@@ -27,11 +27,16 @@
 
 #include "gpio.h"
 
-#define OVS_GRUNT_LOOP_MS 50
+#define OVS_GRUNT_LOOP_MS 5000
 
 static Gateway m_gateway;
 
-static void gw_init_gateway() {
+void gwUpdateEdge(EdgeChannel * ch);
+void gwGetEdgeList();
+void gwAddEdge(Edge* ed);
+void gwDropEdge(Edge* ed);
+
+void gw_init_gateway() {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
 	//TODO Ler Gateway Id URI
@@ -45,13 +50,16 @@ static void gw_init_gateway() {
 
 	//TODO Sync Channel/Edge
 	m_gateway.EdgeChannels[0].Enabled = true;
-	m_gateway.EdgeChannels[0].Id = 24;
+	m_gateway.EdgeChannels[0].Id = 20;
 
 	m_gateway.EdgeChannels[1].Enabled = true;
-	m_gateway.EdgeChannels[1].Id = 4;
+	m_gateway.EdgeChannels[1].Id = 24;
 
 	m_gateway.EdgeChannels[2].Enabled = true;
-	m_gateway.EdgeChannels[2].Id = 8;
+	m_gateway.EdgeChannels[2].Id = 4;
+
+	m_gateway.EdgeChannels[3].Enabled = true;
+	m_gateway.EdgeChannels[3].Id = 8;
 
 	m_gateway.MQTTMutex = xSemaphoreCreateMutex();
 	m_gateway.LocalStorageMutex = xSemaphoreCreateMutex();
@@ -66,9 +74,9 @@ static void gw_init_gateway() {
 
 static void gw_init_shared_queues() {
 	m_gateway.DataSourceQs.DataAvailableQueue = xQueueCreate(
-			OVS_NUMBER_DATA_BUFFER_SIZE, sizeof(uint8_t));
-	m_gateway.DataSourceQs.DataUsedQueue = xQueueCreate(
-			OVS_NUMBER_DATA_BUFFER_SIZE, sizeof(uint8_t));
+			MAX_SAMPLE_BUFFER_SIZE, sizeof(uint8_t));
+	m_gateway.DataSourceQs.DataUsedQueue = xQueueCreate(MAX_SAMPLE_BUFFER_SIZE,
+			sizeof(uint8_t));
 
 	uint8_t initq = 0;
 	for (initq = 0; initq < MAX_SAMPLE_BUFFER_SIZE; initq++) {
@@ -82,7 +90,7 @@ static void gw_init_shared_queues() {
 			sizeof(uint8_t));
 
 	m_gateway.CommandQueue = xQueueCreate(OVS_COMMAND_QUEUE_SIZE,
-			sizeof(uint8_t));
+			sizeof(EdgeCommand));
 }
 
 static void gw_init_tasks() {
@@ -105,20 +113,57 @@ static void gw_init_tasks() {
 			osThread(DataSourceTask), &m_gateway);
 }
 
+void gw_init_callbacks() {
+	m_gateway.CB.gwUpdateEdge = &gwUpdateEdge;
+	m_gateway.CB.gwAddEdge = &gwAddEdge;
+	m_gateway.CB.gwDropEdge = &gwDropEdge;
+	m_gateway.CB.gwGetEdgeList = &gwGetEdgeList;
+}
+
+void qog_ovs_run() {
+	gw_init_gateway();
+	gw_init_tasks();
+	gw_init_callbacks();
+}
+
+//Callbacks
+void gwUpdateEdge(EdgeChannel * ch) {
+	EdgeCommand cmd = { };
+	cmd.Command = EDGE_UPDATE;
+	cmd.pl = &ch->EdgeId;
+	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+}
+void gwGetEdgeList() {
+
+}
+void gwAddEdge(Edge* ed) {
+	EdgeCommand cmd = { };
+	cmd.Command = EDGE_ADD;
+	cmd.pl = &ed;
+	xQueueSend(m_gateway.CommandQueue, (void *)&cmd, 0);
+}
+void gwDropEdge(Edge* ed) {
+	EdgeCommand cmd = { };
+	cmd.Command = EDGE_DROP;
+	cmd.pl = &ed;
+	xQueueSend(m_gateway.CommandQueue, &cmd, 0);
+}
+
 //RTOS Task
-qog_Task GruntTaskImpl(Gateway * gwInst) {
+void GruntTaskImpl(void const * argument) {
 
 	TickType_t xLastWakeTime;
 	const TickType_t xFrequency = portTICK_PERIOD_MS * OVS_GRUNT_LOOP_MS;
 
-	gw_init_gateway();
-	gw_init_tasks();
-
 	xLastWakeTime = xTaskGetTickCount();
 	for (;;) {
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
+		if (m_gateway.Status == GW_BROKER_SOCKET_OPEN) {
+//			gwAddEdge(&m_gateway.EdgeChannels[0].EdgeId);
+//			gwUpdateEdge(&m_gateway.EdgeChannels[1]);
+//			gwDropEdge(&m_gateway.EdgeChannels[0].EdgeId);
+		}
 	}
-
 }
 
 //ISR
