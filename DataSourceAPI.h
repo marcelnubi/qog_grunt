@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-void DataSourceInit();
+void DataSourceInit(Gateway *);
 void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
 double DataSourceNumberRead(uint8_t channelNumber);
 
