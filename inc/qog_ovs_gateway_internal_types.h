@@ -93,7 +93,7 @@ typedef enum {
 
 typedef struct {
 	GatewayCommands Command;
-	Edge *Edge;
+	void *pl;
 } EdgeCommand;
 
 typedef enum {
@@ -120,7 +120,7 @@ typedef struct {
 } GatewayTasks;
 
 typedef struct {
-	void (*gwUpdateEdge)(OVS_Channel *);
+	void (*gwUpdateEdge)(EdgeChannel *);
 	void (*gwGetEdgeList)();
 	void (*gwAddEdge)(Edge*);
 	void (*gwDropEdge)(Edge*);
