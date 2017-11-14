@@ -136,18 +136,21 @@ void gwUpdateEdge(EdgeChannel * ch) {
 	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
 }
 void gwGetEdgeList() {
-
+	EdgeCommand cmd = { };
+	cmd.Command = EDGE_LIST;
+	cmd.pl = NULL;
+	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
 }
 void gwAddEdge(Edge* ed) {
 	EdgeCommand cmd = { };
 	cmd.Command = EDGE_ADD;
-	cmd.pl = &ed;
-	xQueueSend(m_gateway.CommandQueue, (void *)&cmd, 0);
+	cmd.pl = ed;
+	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
 }
 void gwDropEdge(Edge* ed) {
 	EdgeCommand cmd = { };
 	cmd.Command = EDGE_DROP;
-	cmd.pl = &ed;
+	cmd.pl = ed;
 	xQueueSend(m_gateway.CommandQueue, &cmd, 0);
 }
 
