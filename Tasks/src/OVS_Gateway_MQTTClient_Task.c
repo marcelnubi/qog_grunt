@@ -61,7 +61,6 @@ static void MessageHandler(MessageData * data) {
 }
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
-	qog_gw_sys_debug_msg("TASK START: MQTT Publisher");
 	uint8_t gwTopic[128];
 
 	gw = (Gateway*) gwInst;
@@ -186,7 +185,6 @@ void publishData() {
 			break;
 		}
 		retry--;
-		qog_gw_sys_debug_msg("Message Publish Fail");
 		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
 	}
 }
@@ -220,7 +218,6 @@ void publishEdgelist(EdgeCommand* dt) {
 					break;
 				}
 				retry--;
-				qog_gw_sys_debug_msg("Message Publish Fail");
 				vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
 			}
 
@@ -276,7 +273,6 @@ void publishEdgeDrop(EdgeCommand* dt) {
 			break;
 		}
 		retry--;
-		qog_gw_sys_debug_msg("Message Publish Fail");
 		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
 	}
 }
@@ -302,7 +298,6 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 			break;
 		}
 		retry--;
-		qog_gw_sys_debug_msg("Message Publish Fail");
 		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
 	}
 }

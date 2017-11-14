@@ -17,7 +17,6 @@
 static Gateway * m_gw = NULL;
 
 void DataSourceInit(Gateway *gw) {
-	qog_gw_sys_debug_msg("TASK START: Data Source IOB 0005");
 
 	for (uint8_t id = 0; id < 4; id++) {
 		OVS_Edge_IOB_id ed = { };

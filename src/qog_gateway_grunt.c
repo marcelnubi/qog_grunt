@@ -42,7 +42,7 @@ void gw_init_gateway() {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
 	//TODO Ler Gateway Id URI
-	qog_gw_sys_getUri(m_gateway.Id.x);
+	qog_gw_sys_getUri(&m_gateway.Id);
 
 	//TODO Retrieve MQTT Broker config
 	sprintf((char*) m_gateway.BrokerParams.HostName, OVS_BROKER_HOST);
