@@ -398,6 +398,7 @@ void wifiInit() {
 }
 
 qog_Task WifiTaskImpl(Gateway * gwInst) {
+	qog_gw_sys_debug_msg("TASK START: Wireless Communications");
 	m_gatewayInst = gwInst;
 
 	WLANConnectionParams asd = { 0 };
