@@ -63,7 +63,6 @@ static void MessageHandler(MessageData * data) {
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	gw = (Gateway*) gwInst;
 	uint8_t gwTopic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_WILDCARD];
-	Timer timer;
 	network.SockRxQueue = gw->SocketRxQueue;
 	network.SockTxQueue = gw->SocketTxQueue;
 	NetworkInit(&network);
