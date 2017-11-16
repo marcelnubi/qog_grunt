@@ -67,13 +67,16 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	network.SockRxQueue = gw->SocketRxQueue;
 	network.SockTxQueue = gw->SocketTxQueue;
 	NetworkInit(&network);
+
 	MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
 	MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
+	GatewayId gid;
+	qog_gw_sys_getUri(&gid);
 
 	MQTTPacket_connectData conn = MQTTPacket_connectData_initializer;
 	conn.username.cstring = (char*) gw->BrokerParams.Username;
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
-	conn.clientID.cstring = (char*) gw->Id.x;
+	conn.clientID.cstring = (char*) gid.x;
 	conn.cleansession = false;
 	conn.keepAliveInterval = 120;
 
@@ -92,7 +95,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					MQTTClientState = MQTT_CLIENT_CONNECTED;
 
 					//TODO hello gateway
-					sprintf((char*) gwTopic, "/gateway/%s/Info", gw->Id.x);
+					sprintf((char*) gwTopic, "/gateway/%s/Info", gid.x);
 					MQTTMessage msg;
 					msg.payload = "hello";
 					msg.payloadlen = 5;
@@ -100,7 +103,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					MQTTPublish(&client, (char*) gwTopic, &msg);
 
 					//TODO subscribe on listening topics
-					sprintf((char*) gwTopic, "/gateway/%s/Edge/+", gw->Id.x);
+					sprintf((char*) gwTopic, "/gateway/%s/cmd/+", gid.x);
 					MQTTSubscribe(&client, (char*) gwTopic, QOS2,
 							MessageHandler);
 
@@ -188,7 +191,8 @@ void publishData() {
 
 void publishEdgelist(EdgeCommand* dt) {
 //	OVS_EdgeList list = OVS_EdgeList_init_zero;
-
+	GatewayId gid;
+	qog_gw_sys_getUri(&gid);
 	for (uint8_t edx = 0; edx < MAX_DATA_CHANNELS; edx++) {
 
 		if (gw->EdgeChannels[edx].EdgeId.Type != OVS_EdgeType_NULL_EDGE) {
@@ -204,7 +208,7 @@ void publishEdgelist(EdgeCommand* dt) {
 			msg.payload = msgBuf;
 			msg.payloadlen = ostream.bytes_written;
 			msg.retained = 0;
-			sprintf((char*) &topic, "/gateway/%s/Edge/List", gw->Id.x);
+			sprintf((char*) &topic, "/gateway/%s/Edge/List", gid.x);
 			uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 			while (retry > 0) {
 				if (!client.isconnected) {
@@ -226,6 +230,8 @@ void publishEdgeAdd(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_ADD];
 	MQTTMessage msg;
+	GatewayId gid;
+	qog_gw_sys_getUri(&gid);
 
 	Edge *ed = (Edge *) dt->pl;
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
@@ -234,7 +240,7 @@ void publishEdgeAdd(EdgeCommand* dt) {
 	msg.payload = msgBuf;
 	msg.payloadlen = ostream.bytes_written;
 	msg.retained = 0;
-	sprintf((char*) &topic, "/gateway/%s/Edge/Add", gw->Id.x);
+	sprintf((char*) &topic, "/gateway/%s/Edge/Add", gid.x);
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
@@ -252,6 +258,8 @@ void publishEdgeDrop(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_DROP];
 	MQTTMessage msg;
+	GatewayId gid;
+	qog_gw_sys_getUri(&gid);
 
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_EdgeId_fields, (Edge*) dt->pl);
@@ -259,7 +267,7 @@ void publishEdgeDrop(EdgeCommand* dt) {
 	msg.payload = msgBuf;
 	msg.payloadlen = ostream.bytes_written;
 	msg.retained = 0;
-	sprintf((char*) &topic, "/gateway/%s/Edge/Drop", gw->Id.x);
+	sprintf((char*) &topic, "/gateway/%s/Edge/Drop", gid.x);
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
@@ -277,6 +285,8 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[128];
 	MQTTMessage msg;
+	GatewayId gid;
+	qog_gw_sys_getUri(&gid);
 
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_EdgeId_fields, (EdgeChannel*) dt->pl);
@@ -284,7 +294,7 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 	msg.payload = msgBuf;
 	msg.payloadlen = ostream.bytes_written;
 	msg.retained = 0;
-	sprintf((char*) &topic, "/gateway/%s/Edge/Update", gw->Id.x);
+	sprintf((char*) &topic, "/gateway/%s/Edge/Update", gid.x);
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {

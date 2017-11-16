@@ -17,18 +17,19 @@
 static Gateway * m_gw = NULL;
 
 void DataSourceInit(Gateway *gw) {
+	GatewayId gid;
+	qog_gw_sys_getUri(&gid);
 
 	for (uint8_t id = 0; id < 4; id++) {
 		OVS_Edge_IOB_id ed = { };
-		sprintf((char*) &ed.URI.bytes, "%s", gw->Id.x);
+		snprintf((char*) &ed.URI.bytes, sizeof(ed.URI.bytes), "%s", gid.x);
 		ed.URI.size = sizeof(ed.URI.bytes) / sizeof(ed.URI.bytes[0]);
 		ed.Iob = OVS_Edge_IOB_id_type_iob_0005;
 		ed.IobEdge = id;
 
 		pb_ostream_t ostream = pb_ostream_from_buffer(
 				(uint8_t *) gw->EdgeChannels[id].EdgeId.Id.bytes,
-				sizeof(gw->EdgeChannels[id].EdgeId.Id.bytes)
-						/ sizeof(gw->EdgeChannels[id].EdgeId.Id.bytes[0]));
+				sizeof(gw->EdgeChannels[id].EdgeId.Id.bytes));
 		pb_encode(&ostream, OVS_Edge_IOB_id_fields, &ed);
 		gw->EdgeChannels[id].EdgeId.Id.size = ostream.bytes_written;
 		gw->EdgeChannels[id].EdgeId.Type = OVS_EdgeType_QOGNI_IOB_EDGE;
