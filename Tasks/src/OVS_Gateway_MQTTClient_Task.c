@@ -61,9 +61,8 @@ static void MessageHandler(MessageData * data) {
 }
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
-	uint8_t gwTopic[128];
-
 	gw = (Gateway*) gwInst;
+	uint8_t gwTopic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_WILDCARD];
 	Timer timer;
 	network.SockRxQueue = gw->SocketRxQueue;
 	network.SockTxQueue = gw->SocketTxQueue;
@@ -159,7 +158,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 void publishData() {
 	uint8_t idx = 0;
 	uint8_t msgBuf[OVS_ChannelNumberData_size];
-	uint8_t topic[128];
+	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE_DATA];
 	MQTTMessage msg;
 
 	xQueueReceive(gw->DataSourceQs.DataUsedQueue, &idx, 0);
@@ -194,7 +193,7 @@ void publishEdgelist(EdgeCommand* dt) {
 
 		if (gw->EdgeChannels[edx].EdgeId.Type != OVS_EdgeType_NULL_EDGE) {
 			uint8_t msgBuf[OVS_EdgeId_size];
-			uint8_t topic[128];
+			uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_LIST];
 			MQTTMessage msg;
 
 			pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf,
@@ -225,7 +224,7 @@ void publishEdgelist(EdgeCommand* dt) {
 
 void publishEdgeAdd(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
-	uint8_t topic[128];
+	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_ADD];
 	MQTTMessage msg;
 
 	Edge *ed = (Edge *) dt->pl;
@@ -251,7 +250,7 @@ void publishEdgeAdd(EdgeCommand* dt) {
 }
 void publishEdgeDrop(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
-	uint8_t topic[128];
+	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_DROP];
 	MQTTMessage msg;
 
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
