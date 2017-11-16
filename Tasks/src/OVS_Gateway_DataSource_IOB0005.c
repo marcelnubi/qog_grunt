@@ -5,6 +5,8 @@
  *      Author: marcel
  */
 
+#if IOB == 0005
+
 #include "qog_ovs_gateway_internal_types.h"
 #include "qog_gateway_power.h"
 #include "qog_gateway_system.h"
@@ -13,6 +15,8 @@
 #include "i2c.h"
 
 #include "math.h"
+
+
 
 static Gateway * m_gw = NULL;
 
@@ -118,3 +122,5 @@ double DataSourceNumberRead(uint8_t channelNumber) {
 
 	return temperature;
 }
+
+#endif
