@@ -34,9 +34,7 @@ static void publishEdgeUpdate(EdgeCommand*);
 static void publishData();
 
 static enum {
-	MQTT_CLIENT_RESET = 0,
-	MQTT_CLIENT_CONNECTED,
-	MQTT_CLIENT_DISCONNECTED
+	MQTT_CLIENT_RESET = 0, MQTT_CLIENT_CONNECTED, MQTT_CLIENT_DISCONNECTED
 } MQTTClientState;
 
 static void MessageHandler(MessageData * data) {
@@ -117,7 +115,6 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 #if defined(MQTT_TASK)
 			MutexLock(&gw->MQTTMutex);
 #endif
-			MQTTYield(&client, 50);
 
 			while (uxQueueSpacesAvailable(gw->DataSourceQs.DataUsedQueue)
 					< MAX_SAMPLE_BUFFER_SIZE) {
@@ -142,6 +139,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 				default:
 					break;
 				}
+			MQTTYield(&client, 50);
 #if defined(MQTT_TASK)
 			MutexUnlock(&gw->MQTTMutex);
 #endif
