@@ -177,6 +177,7 @@ void publishData() {
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_RESET;
+			gw->Status = MQTT_CLIENT_DISCONNECTED;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -212,6 +213,7 @@ void publishEdgelist(EdgeCommand* dt) {
 			while (retry > 0) {
 				if (!client.isconnected) {
 					MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+					gw->Status = MQTT_CLIENT_DISCONNECTED;
 					break;
 				}
 				if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -244,6 +246,7 @@ void publishEdgeAdd(EdgeCommand* dt) {
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_RESET;
+			gw->Status = MQTT_CLIENT_DISCONNECTED;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -271,6 +274,7 @@ void publishEdgeDrop(EdgeCommand* dt) {
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_RESET;
+			gw->Status = MQTT_CLIENT_DISCONNECTED;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -298,6 +302,7 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_RESET;
+			gw->Status = MQTT_CLIENT_DISCONNECTED;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {

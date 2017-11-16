@@ -469,6 +469,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 		case GW_MQTT_CLIENT_CONNECTED:
 			break;
 		case GW_MQTT_CLIENT_DISCONNECTED:
+			m_gatewayInst->Status = GW_ERROR;
 			break;
 		case GW_WLAN_CONNECTED:
 			//TODO retry counter
