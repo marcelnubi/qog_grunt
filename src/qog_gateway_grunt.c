@@ -153,8 +153,16 @@ void gwGetEdgeList() {
 }
 void gwAddEdge(Edge* ed) {
 	EdgeCommand cmd = { };
+	uint8_t idx;
+	for (idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
+		if (m_gateway.EdgeChannels[idx].EdgeId.Type == OVS_EdgeType_NULL_EDGE) {
+			m_gateway.EdgeChannels[idx].EdgeId = *ed;
+			break;
+		}
+	}
+
 	cmd.Command = EDGE_ADD;
-	cmd.pl = ed;
+	cmd.pl = &m_gateway.EdgeChannels[idx].EdgeId;
 	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
 }
 void gwDropEdge(Edge* ed) {

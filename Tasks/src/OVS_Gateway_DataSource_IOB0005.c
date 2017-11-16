@@ -16,8 +16,6 @@
 
 #include "math.h"
 
-
-
 static Gateway * m_gw = NULL;
 
 void DataSourceInit(Gateway *gw) {
@@ -25,20 +23,21 @@ void DataSourceInit(Gateway *gw) {
 	qog_gw_sys_getUri(&gid);
 
 	for (uint8_t id = 0; id < 4; id++) {
-		OVS_Edge_IOB_id ed = { };
-		snprintf((char*) &ed.URI.bytes, sizeof(ed.URI.bytes), "%s", gid.x);
-		ed.URI.size = sizeof(ed.URI.bytes) / sizeof(ed.URI.bytes[0]);
-		ed.Iob = OVS_Edge_IOB_id_type_iob_0005;
-		ed.IobEdge = id;
+		OVS_Edge_IOB_id edIob = { };
+		Edge ed = { };
+		snprintf((char*) &edIob.URI.bytes, sizeof(edIob.URI.bytes), "%s",
+				gid.x);
+		edIob.URI.size = sizeof(edIob.URI.bytes) / sizeof(edIob.URI.bytes[0]);
+		edIob.Iob = OVS_Edge_IOB_id_type_iob_0005;
+		edIob.IobEdge = id;
 
-		pb_ostream_t ostream = pb_ostream_from_buffer(
-				(uint8_t *) gw->EdgeChannels[id].EdgeId.Id.bytes,
-				sizeof(gw->EdgeChannels[id].EdgeId.Id.bytes));
-		pb_encode(&ostream, OVS_Edge_IOB_id_fields, &ed);
-		gw->EdgeChannels[id].EdgeId.Id.size = ostream.bytes_written;
-		gw->EdgeChannels[id].EdgeId.Type = OVS_EdgeType_QOGNI_IOB_EDGE;
+		pb_ostream_t ostream = pb_ostream_from_buffer(ed.Id.bytes,
+				sizeof(ed.Id.bytes));
+		pb_encode(&ostream, OVS_Edge_IOB_id_fields, &edIob);
+		ed.Id.size = ostream.bytes_written;
+		ed.Type = OVS_EdgeType_QOGNI_IOB_EDGE;
 
-		gw->CB.gwAddEdge(&gw->EdgeChannels[id].EdgeId);
+		gw->CB.gwAddEdge(&ed);
 	}
 
 	ADC_ChannelConfTypeDef sConf;
