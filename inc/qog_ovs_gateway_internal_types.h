@@ -42,7 +42,7 @@ typedef TaskFunction_t qog_Task;
 typedef QueueHandle_t qog_Queue;
 //typedef uint32_t GatewayId;
 typedef struct GatewayId {
-	uint8_t x[24 + 1];
+	char x[25];
 } GatewayId;
 
 typedef struct {
@@ -127,8 +127,6 @@ typedef struct {
 } GatewayCallbacks;
 
 struct Gateway {
-	GatewayId Id;
-
 	WLANConnectionParams WLANConnection;
 	BrokerParams BrokerParams;
 
