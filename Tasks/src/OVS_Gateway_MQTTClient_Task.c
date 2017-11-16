@@ -112,12 +112,12 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		}
 			break;
 		case MQTT_CLIENT_CONNECTED: {
-			TimerInit(&timer);
+//			TimerInit(&timer);
 
 #if defined(MQTT_TASK)
 			MutexLock(&gw->MQTTMutex);
 #endif
-			TimerCountdownMS(&timer, 500); /* Don't wait too long if no traffic is incoming */
+//			TimerCountdownMS(&timer, 100); /* Don't wait too long if no traffic is incoming */
 			MQTTYield(&client, 50);
 
 			while (uxQueueSpacesAvailable(gw->DataSourceQs.DataUsedQueue)
