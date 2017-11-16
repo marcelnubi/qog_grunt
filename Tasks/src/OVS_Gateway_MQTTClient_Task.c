@@ -34,7 +34,7 @@ static void publishEdgeUpdate(EdgeCommand*);
 static void publishData();
 
 static enum {
-	MQTT_CLIENT_UNNINITIALIZED = 0,
+	MQTT_CLIENT_RESET = 0,
 	MQTT_CLIENT_CONNECTED,
 	MQTT_CLIENT_DISCONNECTED
 } MQTTClientState;
@@ -82,7 +82,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	for (;;) {
 		vTaskDelay(MQTT_TASK_LOOP_MS);
 		switch (MQTTClientState) {
-		case MQTT_CLIENT_UNNINITIALIZED: {
+		case MQTT_CLIENT_RESET: {
 			MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
 			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
@@ -176,7 +176,7 @@ void publishData() {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
-			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+			MQTTClientState = MQTT_CLIENT_RESET;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -243,7 +243,7 @@ void publishEdgeAdd(EdgeCommand* dt) {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
-			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+			MQTTClientState = MQTT_CLIENT_RESET;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -270,7 +270,7 @@ void publishEdgeDrop(EdgeCommand* dt) {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
-			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+			MQTTClientState = MQTT_CLIENT_RESET;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
@@ -297,7 +297,7 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
-			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+			MQTTClientState = MQTT_CLIENT_RESET;
 			break;
 		}
 		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
