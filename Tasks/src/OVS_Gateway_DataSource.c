@@ -40,7 +40,6 @@ void __attribute__((weak)) DataSourceInit(Gateway * gw) {
 		Error_Handler();
 	}
 
-
 	qog_gw_pwr_iob_enable();
 }
 void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
@@ -116,7 +115,8 @@ struct {
 
 static qog_Task DataSourceTaskImpl(Gateway * gwInst);
 
-qog_gateway_task DataSourceTaskDef = { &DataSourceTaskImpl, 128, NULL };
+qog_gateway_task DataSourceTaskDef = { &DataSourceTaskImpl,
+		DATASOURCER_TASK_HEAP, NULL };
 
 qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	m_gateway = gwInst;
