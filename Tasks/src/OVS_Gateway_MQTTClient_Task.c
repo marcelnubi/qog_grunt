@@ -42,7 +42,7 @@ static enum {
 static void MessageHandler(MessageData * data) {
 
 	//Edge Sync
-	char* eval = strstr(data->topicName->lenstring.data, "update");
+	char* eval = strstr(data->topicName->lenstring.data, "Set");
 	if (eval != NULL) {
 		OVS_Channel newChannel = OVS_Channel_init_default;
 		pb_istream_t istream = pb_istream_from_buffer(data->message->payload,
