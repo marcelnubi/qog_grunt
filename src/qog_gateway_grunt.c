@@ -15,6 +15,7 @@
 #include "qog_gateway_config.h"
 #include "qog_gateway_system.h"
 #include "qog_ovs_gateway_internal_types.h"
+#include "qog_gateway_util.h"
 
 #include "winc_1500_lib/driver/include/m2m_wifi.h"
 #include "winc_1500_lib/bsp/include/nm_bsp.h"
@@ -41,8 +42,6 @@ void GruntTaskImpl(void const * argument);
 void gw_init_gateway() {
 	m_gateway.Status = GW_STARTING;
 	//TODO Retrieve NV Memory config
-	//TODO Ler Gateway Id URI
-	qog_gw_sys_getUri(&m_gateway.Id);
 
 	//TODO Retrieve MQTT Broker config
 	sprintf((char*) m_gateway.BrokerParams.HostName, OVS_BROKER_HOST);
@@ -131,9 +130,20 @@ void qog_ovs_run() {
 //Callbacks
 void gwUpdateEdge(EdgeChannel * ch) {
 	EdgeCommand cmd = { };
-	cmd.Command = EDGE_UPDATE;
-	cmd.pl = &ch->EdgeId;
-	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+
+	for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
+		//Compare EdgeChannel
+		if (qog_gw_util_isEdgeEqual(&m_gateway.EdgeChannels[idx].EdgeId,
+				&ch->EdgeId)) {
+			m_gateway.EdgeChannels[idx] = *ch;
+			cmd.Command = EDGE_UPDATE;
+			cmd.pl = &ch;
+			break;
+		}
+	}
+
+	if (cmd.pl == &ch)
+		xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
 }
 void gwGetEdgeList() {
 	EdgeCommand cmd = { };
