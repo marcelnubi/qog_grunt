@@ -414,11 +414,11 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			break;
 		case GW_AP_CONFIG_MODE: {
 			wifiInit();
-			tstrM2MAPConfig apConfig = { "WINC1500_00:00", 1, 0,
+			tstrM2MAPConfig apConfig = { "QOGNI_CONFIG", 1, 0,
 			WEP_40_KEY_STRING_SIZE, "qognata33", (uint8) M2M_WIFI_SEC_OPEN,
 					SSID_MODE_VISIBLE };
 
-			m2m_wifi_set_device_name((uint8_t *) "WINC1500_00:00", 3);
+			m2m_wifi_set_device_name((uint8_t *) "QOGNI_CONFIG", 3);
 			apConfig.au8DHCPServerIP[0] = 0xC0; /* 192 */
 			apConfig.au8DHCPServerIP[1] = 0xA8; /* 168 */
 			apConfig.au8DHCPServerIP[2] = 0x01; /* 1 */
