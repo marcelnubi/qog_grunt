@@ -6,6 +6,8 @@
  */
 
 #include "qog_gateway_util.h"
+#include "stdarg.h"
+#include "usart.h"
 
 bool qog_gw_util_isEdgeEqual(Edge * ec1, Edge *ec2) {
 	bool ret = false;
@@ -51,4 +53,19 @@ bool qog_gw_util_isEdgeEqual(Edge * ec1, Edge *ec2) {
 	}
 
 	return ret;
+}
+
+void qog_gw_util_debug_msg(char * format, ...) {
+	{
+#ifndef RELEASE
+		va_list args;
+		uint8_t msg[128];
+		sprintf(msg, "DEBUG: ");
+		va_start(args, format);
+		vsprintf(msg, format, args);
+		va_end(args);
+		sprintf(msg + strlen(msg), "\n");
+		HAL_UART_Transmit(&huart1, msg, strlen(msg), 100);
+#endif
+	}
 }

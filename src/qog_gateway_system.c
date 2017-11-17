@@ -7,13 +7,10 @@
 
 #include "qog_gateway_system.h"
 #include "cmsis_os.h"
-#include "stdarg.h"
 
 #if defined (STM32F091xC)
 #include "stm32f0xx.h"
 #endif
-
-#include "usart.h"
 
 qog_gw_error_t qog_gw_sys_getUri(GatewayId * id) {
 	uint8_t bf[12];
@@ -78,18 +75,3 @@ uint32_t qog_gw_sys_getTimestamp() {
 
 	return JDN;
 }
-
-//void qog_gw_sys_debug_msg(char * format, ...) {
-//	{
-//#ifndef RELEASE
-//		va_list args;
-//		uint8_t msg[128];
-//		sprintf(msg, "DEBUG: ");
-//		va_start(args, format);
-//		vsprintf(msg, format, args);
-//		va_end(args);
-//		sprintf(msg + strlen(msg), "\n");
-//		HAL_UART_Transmit(&huart1, msg, strlen(msg), 100);
-//#endif
-//	}
-//}
