@@ -146,10 +146,14 @@ void gwUpdateEdge(EdgeChannel * ch) {
 		xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
 }
 void gwGetEdgeList() {
-	EdgeCommand cmd = { };
-	cmd.Command = EDGE_LIST;
-	cmd.pl = NULL;
-	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+	for (uint8_t edx = 0; edx < MAX_DATA_CHANNELS; edx++) {
+		if (m_gateway.EdgeChannels[edx].EdgeId.Type != OVS_EdgeType_NULL_EDGE) {
+			EdgeCommand cmd = { };
+			cmd.Command = EDGE_LIST;
+			cmd.pl = &m_gateway.EdgeChannels[edx].EdgeId;
+			xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+		}
+	}
 }
 void gwAddEdge(Edge* ed) {
 	EdgeCommand cmd = { };
