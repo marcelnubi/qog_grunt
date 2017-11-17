@@ -186,24 +186,8 @@ void publishData() {
 		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
 	}
 }
-
-void publishEdgelist(EdgeCommand* dt) {
-//	OVS_EdgeList list = OVS_EdgeList_init_zero;
-	GatewayId gid;
-	qog_gw_sys_getUri(&gid);
-	uint8_t msgBuf[OVS_EdgeId_size];
-	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_LIST];
-	MQTTMessage msg;
-	Edge *eId = (Edge*)dt->pl;
-
-	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
-	pb_encode(&ostream, OVS_EdgeId_fields, eId);
-	sprintf((char*) &topic, "/gateway/%s/Edge/List", gid.x);
-
-	msg.qos = QOS2;
-	msg.payload = msgBuf;
-	msg.payloadlen = ostream.bytes_written;
-	msg.retained = 0;
+static void publishCommand(uint8_t * msgBuf, uint8_t bufSize, uint8_t * topic) {
+	MQTTMessage msg = { QOS2, false, false, 0, msgBuf, bufSize };
 
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
@@ -219,63 +203,35 @@ void publishEdgelist(EdgeCommand* dt) {
 		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
 	}
 }
+void publishEdgelist(EdgeCommand* dt) {
+	uint8_t msgBuf[OVS_EdgeId_size];
+	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_LIST];
+	GatewayId gid;
+
+	qog_gw_sys_getUri(&gid);
+	Edge *eId = (Edge*) dt->pl;
+	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
+	pb_encode(&ostream, OVS_EdgeId_fields, eId);
+	sprintf((char*) &topic, "/gateway/%s/Edge/List", gid.x);
+
+	publishCommand(msgBuf, ostream.bytes_written, topic);
+}
 
 void publishEdgeAdd(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_ADD];
-	MQTTMessage msg;
 	GatewayId gid;
-	qog_gw_sys_getUri(&gid);
 
+	qog_gw_sys_getUri(&gid);
 	Edge *ed = (Edge *) dt->pl;
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_EdgeId_fields, ed);
-	msg.qos = QOS2;
-	msg.payload = msgBuf;
-	msg.payloadlen = ostream.bytes_written;
-	msg.retained = 0;
 	sprintf((char*) &topic, "/gateway/%s/Edge/Add", gid.x);
-	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
-	while (retry > 0) {
-		if (!client.isconnected) {
-			MQTTClientState = MQTT_CLIENT_RESET;
-			gw->Status = MQTT_CLIENT_DISCONNECTED;
-			break;
-		}
-		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
-			break;
-		}
-		retry--;
-		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
-	}
+
+	publishCommand(msgBuf, ostream.bytes_written, topic);
 }
 void publishEdgeDrop(EdgeCommand* dt) {
-	uint8_t msgBuf[OVS_EdgeId_size];
-	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_DROP];
-	MQTTMessage msg;
-	GatewayId gid;
-	qog_gw_sys_getUri(&gid);
-
-	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
-	pb_encode(&ostream, OVS_EdgeId_fields, (Edge*) dt->pl);
-	msg.qos = QOS2;
-	msg.payload = msgBuf;
-	msg.payloadlen = ostream.bytes_written;
-	msg.retained = 0;
-	sprintf((char*) &topic, "/gateway/%s/Edge/Drop", gid.x);
-	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
-	while (retry > 0) {
-		if (!client.isconnected) {
-			MQTTClientState = MQTT_CLIENT_RESET;
-			gw->Status = MQTT_CLIENT_DISCONNECTED;
-			break;
-		}
-		if (MQTTPublish(&client, (char*) topic, &msg) == MQTT_SUCCESS) {
-			break;
-		}
-		retry--;
-		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
-	}
+	//TODO
 }
 void publishEdgeUpdate(EdgeCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
