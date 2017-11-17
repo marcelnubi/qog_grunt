@@ -68,12 +68,11 @@ double DataSourceNumberRead(uint8_t channelNumber) {
 		HAL_ADC_Start(&hadc);
 		if (HAL_ADC_PollForConversion(&hadc, 50) == HAL_OK) {
 			uint32_t dasd = HAL_ADC_GetValue(&hadc);
-			HAL_ADC_Stop(&hadc);
-
 			temperature = dasd * 3.3 * 2 / 4096.0;
 		} else {
 			temperature = m_gw->TimeStamp;
 		}
+		HAL_ADC_Stop(&hadc);
 	}
 		break;
 	case 1: {
