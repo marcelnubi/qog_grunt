@@ -97,17 +97,6 @@ double __attribute__((weak)) DataSourceNumberRead(uint8_t channelNumber) {
 	return temperature;
 }
 
-static void PushNumberData(double val, uint32_t channel, uint32_t timestamp) {
-	uint8_t avail;
-	xQueueReceive(m_gateway->DataSourceQs.DataAvailableQueue, &avail, 10);
-
-	m_gateway->DataSampleBuffer[avail].channelId = channel;
-	m_gateway->DataSampleBuffer[avail].numData.timestamp = timestamp;
-	m_gateway->DataSampleBuffer[avail].numData.value = val;
-
-	xQueueSend(m_gateway->DataSourceQs.DataUsedQueue, &avail, 10);
-}
-
 struct {
 	OVS_Channel * Channels;
 	uint32_t NextMeasurement[MAX_DATA_CHANNELS];
@@ -145,7 +134,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 			if (MeasurementSchedule.Channels[idx].Enabled == true) {
 				if (MeasurementSchedule.NextMeasurement[idx] <= thisTime) {
 					currentVal = DataSourceNumberRead(idx);
-					PushNumberData(currentVal,
+					m_gateway->CB.gwPushNumberData(currentVal,
 							MeasurementSchedule.Channels[idx].Id, thisTime);
 					MeasurementSchedule.NextMeasurement[idx] = thisTime
 							+ MeasurementSchedule.Channels[idx].Period;
