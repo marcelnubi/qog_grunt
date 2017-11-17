@@ -6,7 +6,7 @@
  */
 
 #include "qog_ovs_gateway_internal_types.h"
-#include "DataSourceAPI.h"
+#include "qog_gateway_data_source_base.h"
 #include "qog_gateway_power.h"
 
 #include "i2c.h"
