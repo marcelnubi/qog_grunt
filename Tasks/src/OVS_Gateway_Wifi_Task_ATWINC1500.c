@@ -481,13 +481,19 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 				m_gatewayInst->Status = GW_BROKER_DNS_RESOLVED;
 			//TODO retry counter
 			break;
-		case GW_WLAN_DISCONNECTED:
+		case GW_WLAN_DISCONNECTED: {
+			uint8_t retry = 0;
 			wifiInit();
-			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK)
-				m_gatewayInst->Status = GW_WLAN_CONNECTED;
-			else
+			for (retry = OVS_WLAN_RETRY; retry > 0; retry--) {
+				if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK) {
+					m_gatewayInst->Status = GW_WLAN_CONNECTED;
+					break;
+				}
+			}
+			if (retry == 0)
 				m_gatewayInst->Status = GW_AP_CONFIG_MODE;
 			//TODO retry counter
+		}
 			break;
 		case GW_ERROR:
 			HAL_Delay(1000);
