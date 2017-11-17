@@ -5,8 +5,10 @@
  *      Author: Marcel
  */
 
+#if defined (IOB)
+
 #include "qog_ovs_gateway_internal_types.h"
-#include "qog_gateway_data_source_base.h"
+#include "qog_gateway_data_source_IOB.h"
 #include "qog_gateway_power.h"
 
 #include "i2c.h"
@@ -144,3 +146,5 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	}
 	return 0;
 }
+
+#endif
