@@ -253,7 +253,7 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 			break;
 		}
 		retry--;
-		vTaskDelay(MQTT_CLIET_PUBLISH_RETRY_DELAY_MS);
+		vTaskDelay(MQTT_CLIENT_PUBLISH_RETRY_DELAY_MS);
 	}
 }
 #endif
