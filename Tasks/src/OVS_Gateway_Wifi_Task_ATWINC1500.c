@@ -96,8 +96,6 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 		memcpy(&packetBuffer, pstrRx->pu8Buffer, sizeof(packetBuffer));
 
 		if ((packetBuffer[0] & 0x7) != 4) { /* expect only server response */
-//					printf(
-//							"socket_cb: Expecting response from Server Only!\r\n");
 			return; /* MODE is not server, abort */
 		} else {
 			uint32_t secsSince1900 = packetBuffer[40] << 24
@@ -122,15 +120,11 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 	case SOCKET_MSG_RECV: {
 		tstrSocketRecvMsg *pstrRecv = (tstrSocketRecvMsg *) pvMsg;
 		if (pstrRecv && pstrRecv->s16BufferSize > 0) {
-//			if ((pstrRecv->strRemoteAddr.sin_addr.s_addr
-//					== m_gatewayInst->BrokerParams.HostIp)) //TODO How to check remote address match with Broker config?
-//			{
 			uint16_t idx = 0;
 			while (idx++ < pstrRecv->s16BufferSize) {
 				xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
 						0);
 			}
-//			}
 		} else {
 			close(Sockets[MQTT_SOCKET].number);
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
@@ -158,11 +152,8 @@ static void wifi_cb(uint8_t u8MsgType, void *pvMsg) {
 	}
 		break;
 	case M2M_WIFI_REQ_DHCP_CONF: {
-//		tstrM2MIPConfig *conf = (tstrM2MIPConfig*) pvMsg;
 		if (m_gatewayInst->Status == GW_WLAN_DISCONNECTED)
 			m_gatewayInst->Status = GW_WLAN_CONNECTED;
-		/* Obtain the IP Address by network name */
-
 	}
 		break;
 	case M2M_WIFI_RESP_IP_CONFLICT: {
