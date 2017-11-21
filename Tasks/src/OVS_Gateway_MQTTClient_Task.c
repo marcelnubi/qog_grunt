@@ -156,8 +156,12 @@ void publishData() {
 	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE_DATA];
 	MQTTMessage msg;
 
-	xQueueReceive(gw->DataSourceQs.DataUsedQueue, &idx, 0);
-	OVS_ChannelNumberData* sample = &gw->DataSampleBuffer[idx];
+	OVS_ChannelNumberData *sample = NULL;
+
+	if (gw->CB.gwPopNumberData(&sample) == false) {
+		return;
+	}
+
 	sample->has_numData = true;
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_ChannelNumberData_fields, sample);

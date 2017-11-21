@@ -37,6 +37,7 @@ void gwGetEdgeList();
 void gwAddEdge(Edge* ed);
 void gwDropEdge(Edge* ed);
 void gwPushNumberData(double val, uint32_t channel, uint32_t timestamp);
+bool gwPopNumberData(OVS_ChannelNumberData ** out);
 
 void GruntTaskImpl(void const * argument);
 
@@ -125,6 +126,7 @@ void gw_init_callbacks() {
 	m_gateway.CB.gwDropEdge = &gwDropEdge;
 	m_gateway.CB.gwGetEdgeList = &gwGetEdgeList;
 	m_gateway.CB.gwPushNumberData = &gwPushNumberData;
+	m_gateway.CB.gwPopNumberData = &gwPopNumberData;
 }
 
 void qog_ovs_run() {
@@ -192,6 +194,18 @@ void gwPushNumberData(double val, uint32_t channel, uint32_t timestamp) {
 
 	xQueueSend(m_gateway.DataSourceQs.DataUsedQueue, &avail, 10);
 }
+
+bool gwPopNumberData(OVS_ChannelNumberData ** out) {
+	uint8_t idx = 0;
+	if (xQueueReceive(m_gateway.DataSourceQs.DataUsedQueue, &idx,
+			10) != errQUEUE_EMPTY) {
+		*out = &m_gateway.DataSampleBuffer[idx];
+		xQueueSend(m_gateway.DataSourceQs.DataAvailableQueue, &idx, 10);
+		return true;
+	}
+	return false;
+}
+
 //RTOS Task
 void GruntTaskImpl(void const * argument) {
 

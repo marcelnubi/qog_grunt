@@ -125,6 +125,7 @@ typedef struct {
 	void (*gwAddEdge)(Edge*);
 	void (*gwDropEdge)(Edge*);
 	void (*gwPushNumberData)(double val, uint32_t channel, uint32_t timestamp);
+	bool (*gwPopNumberData)(OVS_ChannelNumberData **);
 } GatewayCallbacks;
 
 struct Gateway {
