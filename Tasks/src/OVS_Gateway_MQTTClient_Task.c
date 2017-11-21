@@ -112,37 +112,32 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			break;
 		case MQTT_CLIENT_CONNECTED: {
 
-#if defined(MQTT_TASK)
-			MutexLock(&gw->MQTTMutex);
-#endif
-
-			while (uxQueueSpacesAvailable(gw->DataSourceQs.DataUsedQueue)
-					< MAX_SAMPLE_BUFFER_SIZE) {
+			if (uxQueueSpacesAvailable(
+					gw->DataSourceQs.DataUsedQueue) < MAX_SAMPLE_BUFFER_SIZE) {
 				publishData();
 			}
 
 			//TODO ler fila de comandos OVS
-			EdgeCommand dt = { };
-			if (xQueueReceive(gw->CommandQueue, &dt, 0) != errQUEUE_EMPTY)
-				switch (dt.Command) {
-				case EDGE_LIST:
-					publishEdgelist(&dt);
-					break;
-				case EDGE_ADD:
-					publishEdgeAdd(&dt);
-					break;
-				case EDGE_DROP:
-					publishEdgeDrop(&dt);
-					break;
-				case EDGE_UPDATE:
-					publishEdgeUpdate(&dt);
-				default:
-					break;
-				}
+			while (uxQueueMessagesWaiting(gw->CommandQueue)) {
+				EdgeCommand dt = { };
+				if (xQueueReceive(gw->CommandQueue, &dt, 0) != errQUEUE_EMPTY)
+					switch (dt.Command) {
+					case EDGE_LIST:
+						publishEdgelist(&dt);
+						break;
+					case EDGE_ADD:
+						publishEdgeAdd(&dt);
+						break;
+					case EDGE_DROP:
+						publishEdgeDrop(&dt);
+						break;
+					case EDGE_UPDATE:
+						publishEdgeUpdate(&dt);
+					default:
+						break;
+					}
+			}
 			MQTTYield(&client, 50);
-#if defined(MQTT_TASK)
-			MutexUnlock(&gw->MQTTMutex);
-#endif
 		}
 			break;
 		default:
