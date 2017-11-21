@@ -18,6 +18,7 @@
 #include "OVS_Channel.pb.h"
 #include "OVS_ChannelNumberData.pb.h"
 #include "OVS_EdgeId.pb.h"
+#include "OVS_GatewayStatus.pb.h"
 
 #include <stdint.h>
 /*
@@ -143,6 +144,7 @@ struct Gateway {
 	qog_Queue SocketTxQueue;
 
 	OVS_ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
+	OVS_GatewayStatus StatusMessageBuffer[MAX_STATUS_MSG_BUFFER_SIZE];
 
 	GatewayCallbacks CB;
 
