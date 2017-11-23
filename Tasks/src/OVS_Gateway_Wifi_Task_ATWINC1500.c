@@ -490,8 +490,8 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			HAL_Delay(1000);
 			m_gatewayInst->Status = GW_STARTING;
 			break;
-//		default:
-//			break;
+		default:
+			break;
 		}
 	}
 	return 0;
