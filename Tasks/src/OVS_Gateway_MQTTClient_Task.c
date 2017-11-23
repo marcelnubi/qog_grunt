@@ -125,6 +125,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
 			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
+			gw->Status = GW_MQTT_CLIENT_DISCONNECTED;
 		}
 			break;
 		case MQTT_CLIENT_DISCONNECTED: {
