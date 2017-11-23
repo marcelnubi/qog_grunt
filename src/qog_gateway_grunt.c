@@ -53,19 +53,19 @@ void gw_init_gateway() {
 
 	//TODO Sync Channel/Edge
 	m_gateway.EdgeChannels[0].Enabled = true;
-	m_gateway.EdgeChannels[0].Id = 20;
+	m_gateway.EdgeChannels[0].Id = 1;
 	m_gateway.EdgeChannels[0].Period = 1;
 
 	m_gateway.EdgeChannels[1].Enabled = true;
-	m_gateway.EdgeChannels[1].Id = 24;
+	m_gateway.EdgeChannels[1].Id = 2;
 	m_gateway.EdgeChannels[1].Period = 1;
 
 	m_gateway.EdgeChannels[2].Enabled = true;
-	m_gateway.EdgeChannels[2].Id = 4;
+	m_gateway.EdgeChannels[2].Id = 3;
 	m_gateway.EdgeChannels[2].Period = 1;
 
 	m_gateway.EdgeChannels[3].Enabled = true;
-	m_gateway.EdgeChannels[3].Id = 8;
+	m_gateway.EdgeChannels[3].Id = 4;
 	m_gateway.EdgeChannels[3].Period = 1;
 
 	m_gateway.MQTTMutex = xSemaphoreCreateMutex();
