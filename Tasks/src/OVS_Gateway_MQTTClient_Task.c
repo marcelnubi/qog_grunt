@@ -153,6 +153,9 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			break;
 		case MQTT_CLIENT_CONNECTED: {
 
+			if(gw->Status !=GW_BROKER_SOCKET_OPEN)
+				MQTTClientState = MQTT_CLIENT_RESET;
+
 			if (uxQueueSpacesAvailable(
 					gw->DataSourceQs.DataUsedQueue) < MAX_SAMPLE_BUFFER_SIZE) {
 				publishData();
