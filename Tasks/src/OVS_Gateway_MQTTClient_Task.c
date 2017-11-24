@@ -12,8 +12,8 @@
 
 //-------- Gateway Interface - START
 #include "qog_ovs_gateway_internal_types.h"
-#include "qog_gateway_system.h"
 #include "qog_gateway_util.h"
+#include "qog_gateway_system.h"
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst);
 
@@ -28,10 +28,11 @@ uint8_t rxBuf[MQTT_RX_BUFFER_SIZE], txBuf[MQTT_TX_BUFFER_SIZE];
 Gateway* gw = NULL;
 
 //Private Functions
-static void publishEdgelist(EdgeCommand*);
-static void publishEdgeAdd(EdgeCommand*);
-static void publishEdgeDrop(EdgeCommand*);
-static void publishEdgeUpdate(EdgeCommand*);
+static void publishEdgelist(GatewayCommand*);
+static void publishEdgeAdd(GatewayCommand*);
+static void publishEdgeDrop(GatewayCommand*);
+static void publishEdgeUpdate(GatewayCommand*);
+static void publishGatewayStatus(GatewayCommand*);
 static void publishData();
 
 static enum {
@@ -52,6 +53,7 @@ static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 			break;
 		} else {
 			retry--;
+			gw->Diagnostics.MsgPublishFails++;
 			if (retry == 0)
 				return true;
 
@@ -65,17 +67,19 @@ static void publishCommandMsg(uint8_t * msgBuf, uint8_t bufSize,
 		uint8_t * topic) {
 	MQTTMessage msg = { QOS2, false, false, 0, msgBuf, bufSize };
 
-	if (publishMessage(&msg, topic))
+	if (publishMessage(&msg, topic)) {
 		qog_gw_util_debug_msg("ERROR: Publish Command Fail, time=%d,topic=%s",
 				gw->TimeStamp, topic);
+	}
 }
 
 static void publishDataMsg(uint8_t * msgBuf, uint8_t bufSize, uint8_t * topic) {
 	MQTTMessage msg = { QOS0, false, false, 0, msgBuf, bufSize };
 
-	if (publishMessage(&msg, topic))
+	if (publishMessage(&msg, topic)) {
 		qog_gw_util_debug_msg("ERROR: Publish Data Fail, time=%d,topic=%s",
 				gw->TimeStamp, topic);
+	}
 }
 
 static void MessageHandler(MessageData * data) {
@@ -134,7 +138,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					MQTTClientState = MQTT_CLIENT_CONNECTED;
 
 					//TODO hello gateway
-					sprintf((char*) gwTopic, "/gateway/%s/Info", gid.x);
+					sprintf((char*) gwTopic, "/gateway/%s/info", gid.x);
 					MQTTMessage msg;
 					msg.payload = "hello";
 					msg.payloadlen = 5;
@@ -154,7 +158,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			break;
 		case MQTT_CLIENT_CONNECTED: {
 
-			if(gw->Status !=GW_BROKER_SOCKET_OPEN)
+			if (gw->Status != GW_BROKER_SOCKET_OPEN)
 				MQTTClientState = MQTT_CLIENT_RESET;
 
 			if (uxQueueSpacesAvailable(
@@ -164,7 +168,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 
 			//TODO ler fila de comandos OVS
 			while (uxQueueMessagesWaiting(gw->CommandQueue)) {
-				EdgeCommand dt = { };
+				GatewayCommand dt = { };
 				if (xQueueReceive(gw->CommandQueue, &dt, 0) != errQUEUE_EMPTY)
 					switch (dt.Command) {
 					case EDGE_LIST:
@@ -178,6 +182,9 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 						break;
 					case EDGE_UPDATE:
 						publishEdgeUpdate(&dt);
+						break;
+					case GW_STATUS:
+						publishGatewayStatus(&dt);
 					default:
 						break;
 					}
@@ -211,7 +218,7 @@ void publishData() {
 	publishDataMsg(msgBuf, ostream.bytes_written, topic);
 }
 
-void publishEdgelist(EdgeCommand* dt) {
+void publishEdgelist(GatewayCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_LIST];
 	GatewayId gid;
@@ -220,12 +227,12 @@ void publishEdgelist(EdgeCommand* dt) {
 	Edge *eId = (Edge*) dt->pl;
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_EdgeId_fields, eId);
-	sprintf((char*) &topic, "/gateway/%s/Edge/List", gid.x);
+	sprintf((char*) &topic, "/gateway/%s/edge/list", gid.x);
 
 	publishCommandMsg(msgBuf, ostream.bytes_written, topic);
 }
 
-void publishEdgeAdd(EdgeCommand* dt) {
+void publishEdgeAdd(GatewayCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_ADD];
 	GatewayId gid;
@@ -234,16 +241,16 @@ void publishEdgeAdd(EdgeCommand* dt) {
 	Edge *ed = (Edge *) dt->pl;
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_EdgeId_fields, ed);
-	sprintf((char*) &topic, "/gateway/%s/Edge/Add", gid.x);
+	sprintf((char*) &topic, "/gateway/%s/edge/add", gid.x);
 
 	publishCommandMsg(msgBuf, ostream.bytes_written, topic);
 }
 
-void publishEdgeDrop(EdgeCommand* dt) {
+void publishEdgeDrop(GatewayCommand* dt) {
 	//TODO
 }
 
-void publishEdgeUpdate(EdgeCommand* dt) {
+void publishEdgeUpdate(GatewayCommand* dt) {
 	uint8_t msgBuf[OVS_EdgeId_size];
 	uint8_t topic[128];
 	MQTTMessage msg;
@@ -256,7 +263,7 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 	msg.payload = msgBuf;
 	msg.payloadlen = ostream.bytes_written;
 	msg.retained = 0;
-	sprintf((char*) &topic, "/gateway/%s/Edge/Update", gid.x);
+	sprintf((char*) &topic, "/gateway/%s/edge/update", gid.x);
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
 	while (retry > 0) {
 		if (!client.isconnected) {
@@ -270,5 +277,19 @@ void publishEdgeUpdate(EdgeCommand* dt) {
 		retry--;
 		vTaskDelay(MQTT_CLIENT_PUBLISH_RETRY_DELAY_MS);
 	}
+}
+
+void publishGatewayStatus(GatewayCommand* dt) {
+	uint8_t msgBuf[OVS_EdgeId_size];
+	uint8_t topic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_LIST];
+	GatewayId gid;
+
+	qog_gw_sys_getUri(&gid);
+	GatewayDiagnostics * gwDiag = (GatewayDiagnostics *) dt->pl;
+	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
+	pb_encode(&ostream, OVS_GatewayStatus_fields, gwDiag);
+	sprintf((char*) &topic, "/gateway/%s/status", gid.x);
+
+	publishCommandMsg(msgBuf, ostream.bytes_written, topic);
 }
 #endif
