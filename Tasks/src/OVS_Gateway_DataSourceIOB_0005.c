@@ -27,7 +27,7 @@ void DataSourceInit(Gateway *gw) {
 		Edge ed = { };
 		snprintf((char*) &edIob.URI.bytes, sizeof(edIob.URI.bytes), "%s",
 				gid.x);
-		edIob.URI.size = sizeof(edIob.URI.bytes) / sizeof(edIob.URI.bytes[0]);
+		edIob.URI.size = sizeof(edIob.URI.bytes);
 		edIob.Iob = OVS_Edge_IOB_id_type_iob_0005;
 		edIob.IobEdge = id;
 

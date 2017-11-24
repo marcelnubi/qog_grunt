@@ -33,10 +33,10 @@
 #include "queue.h"
 #include "semphr.h"
 
-typedef struct{
+typedef struct {
 	RTC_TimeTypeDef Time;
 	RTC_DateTypeDef Date;
-}qog_DateTime;
+} qog_DateTime;
 
 typedef SemaphoreHandle_t qog_Mutex;
 typedef TaskFunction_t qog_Task;
@@ -87,15 +87,16 @@ typedef struct {
 
 typedef OVS_Channel EdgeChannel;
 typedef OVS_EdgeId Edge;
+typedef OVS_GatewayStatus GatewayDiagnostics;
 
 typedef enum {
-	NOP = 0, EDGE_ADD, EDGE_DROP, EDGE_LIST, EDGE_UPDATE
-} GatewayCommands;
+	NOP = 0, EDGE_ADD, EDGE_DROP, EDGE_LIST, EDGE_UPDATE, GW_STATUS
+} GatewayCommandCode;
 
 typedef struct {
-	GatewayCommands Command;
+	GatewayCommandCode Command;
 	void *pl;
-} EdgeCommand;
+} GatewayCommand;
 
 typedef enum {
 	GW_ERROR = -1,
@@ -144,7 +145,7 @@ struct Gateway {
 	qog_Queue SocketTxQueue;
 
 	OVS_ChannelNumberData DataSampleBuffer[MAX_SAMPLE_BUFFER_SIZE];
-	OVS_GatewayStatus StatusMessageBuffer[MAX_STATUS_MSG_BUFFER_SIZE];
+	GatewayDiagnostics Diagnostics;
 
 	GatewayCallbacks CB;
 
