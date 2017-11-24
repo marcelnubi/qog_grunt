@@ -79,6 +79,8 @@ double DataSourceNumberRead(uint8_t channelNumber) {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Master_Receive(&hi2c2, 0x14 << 1, dasd, 2, 100) != HAL_OK) {
 			temperature = m_gw->TimeStamp;
+			HAL_I2C_DeInit(&hi2c2);
+			MX_I2C2_Init();
 		} else {
 			uint16_t temp_code = (dasd[0] << 8) | dasd[1];
 			double Vf = temp_code * 0.000045776;
@@ -95,9 +97,11 @@ double DataSourceNumberRead(uint8_t channelNumber) {
 	case 2: {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Mem_Read(&hi2c2, 0x40 << 1, 0xE5, 1, dasd, 2, 100)
-				!= HAL_OK)
+				!= HAL_OK) {
 			temperature = m_gw->TimeStamp;
-		else {
+			HAL_I2C_DeInit(&hi2c2);
+			MX_I2C2_Init();
+		} else {
 			uint16_t rh_code = (dasd[0] << 8) | dasd[1];
 			temperature = (125.0 * rh_code / 65536) - 6.0;
 		}
@@ -106,9 +110,11 @@ double DataSourceNumberRead(uint8_t channelNumber) {
 	case 3: {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Mem_Read(&hi2c2, 0x40 << 1, 0xE3, 1, dasd, 2, 100)
-				!= HAL_OK)
+				!= HAL_OK) {
 			temperature = m_gw->TimeStamp;
-		else {
+			HAL_I2C_DeInit(&hi2c2);
+			MX_I2C2_Init();
+		} else {
 			uint16_t temp_code = (dasd[0] << 8) | dasd[1];
 			temperature = (175.72 * temp_code / 65536) - 46.85;
 		}
