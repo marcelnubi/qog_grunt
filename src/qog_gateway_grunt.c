@@ -27,8 +27,9 @@
 #include "OVS_Gateway_Task.h"
 
 #include "gpio.h"
+#include "adc.h"
 
-#define OVS_GRUNT_LOOP_MS 5000
+#define OVS_GRUNT_LOOP_MS 20000
 
 static Gateway m_gateway;
 
@@ -97,7 +98,7 @@ static void gw_init_shared_queues() {
 			sizeof(uint8_t));
 
 	m_gateway.CommandQueue = xQueueCreate(OVS_COMMAND_QUEUE_SIZE,
-			sizeof(EdgeCommand));
+			sizeof(GatewayCommand));
 }
 
 static void gw_init_tasks() {
@@ -137,7 +138,7 @@ void qog_ovs_run() {
 
 //Callbacks
 void gwUpdateEdge(EdgeChannel * ch) {
-	EdgeCommand cmd = { };
+	GatewayCommand cmd = { };
 
 	for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
 		//Compare EdgeChannel
@@ -151,20 +152,20 @@ void gwUpdateEdge(EdgeChannel * ch) {
 	}
 
 	if (cmd.pl == &ch)
-		xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+		xQueueSend(m_gateway.CommandQueue, &cmd, 0);
 }
 void gwGetEdgeList() {
 	for (uint8_t edx = 0; edx < MAX_DATA_CHANNELS; edx++) {
 		if (m_gateway.EdgeChannels[edx].EdgeId.Type != OVS_EdgeType_NULL_EDGE) {
-			EdgeCommand cmd = { };
+			GatewayCommand cmd = { };
 			cmd.Command = EDGE_LIST;
 			cmd.pl = &m_gateway.EdgeChannels[edx].EdgeId;
-			xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+			xQueueSend(m_gateway.CommandQueue, &cmd, 0);
 		}
 	}
 }
 void gwAddEdge(Edge* ed) {
-	EdgeCommand cmd = { };
+	GatewayCommand cmd = { };
 	uint8_t idx;
 	for (idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
 		if (m_gateway.EdgeChannels[idx].EdgeId.Type == OVS_EdgeType_NULL_EDGE) {
@@ -175,10 +176,10 @@ void gwAddEdge(Edge* ed) {
 
 	cmd.Command = EDGE_ADD;
 	cmd.pl = &m_gateway.EdgeChannels[idx].EdgeId;
-	xQueueSend(m_gateway.CommandQueue, (void * )&cmd, 0);
+	xQueueSend(m_gateway.CommandQueue, &cmd, 0);
 }
 void gwDropEdge(Edge* ed) {
-	EdgeCommand cmd = { };
+	GatewayCommand cmd = { };
 	cmd.Command = EDGE_DROP;
 	cmd.pl = ed;
 	xQueueSend(m_gateway.CommandQueue, &cmd, 0);
@@ -215,11 +216,26 @@ void GruntTaskImpl(void const * argument) {
 	xLastWakeTime = xTaskGetTickCount();
 	for (;;) {
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		if (m_gateway.Status == GW_BROKER_SOCKET_OPEN) {
-//			gwAddEdge(&m_gateway.EdgeChannels[0].EdgeId);
-//			gwUpdateEdge(&m_gateway.EdgeChannels[1]);
-//			gwDropEdge(&m_gateway.EdgeChannels[0].EdgeId);
-		}
+
+		//Update Battery Level
+		HAL_ADC_Start(&hadc);
+		if (HAL_ADC_PollForConversion(&hadc, 100) == HAL_OK) {
+			m_gateway.Diagnostics.BatteryLevel = HAL_ADC_GetValue(&hadc) * 2.0
+					* 0.732422;
+		} else
+			m_gateway.Diagnostics.BatteryLevel = 0;
+		HAL_ADC_Stop(&hadc);
+
+		m_gateway.Diagnostics.Uptime+=OVS_GRUNT_LOOP_MS/1000;
+
+		GatewayCommand cmd = { GW_STATUS, (void *) &m_gateway.Diagnostics };
+		xQueueSend(m_gateway.CommandQueue, &cmd, 0);
+
+		qog_gw_util_debug_msg("Gateway Status");
+		qog_gw_util_debug_msg("Battery Level = %d",m_gateway.Diagnostics.BatteryLevel);
+		qog_gw_util_debug_msg("Uptime = %d",m_gateway.Diagnostics.Uptime);
+		qog_gw_util_debug_msg("Message Publish Fail = %d",m_gateway.Diagnostics.MsgPublishFails);
+
 	}
 }
 
