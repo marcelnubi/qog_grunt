@@ -43,7 +43,8 @@ static struct {
 	SOCKET number;
 } Sockets[MAX_OPEN_SOCKETS];
 
-static uint8_t qBuff[TCP_RX_SOCKET_BUFFER_SIZE];
+static uint8_t txBuff[TCP_RX_SOCKET_BUFFER_SIZE];
+static uint8_t rxBuff[TCP_RX_SOCKET_BUFFER_SIZE];
 
 uint32_t resolvedHostIp = 0x0;
 
@@ -444,14 +445,14 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 					m_gatewayInst->SocketTxQueue);
 
 			while (qSize > 0) {
-				xQueueReceive(m_gatewayInst->SocketTxQueue, &qBuff[qBuffSize++],
+				xQueueReceive(m_gatewayInst->SocketTxQueue, &txBuff[qBuffSize++],
 						0);
 				qSize--;
 			}
 			if (qBuffSize)
-				send(Sockets[MQTT_SOCKET].number, qBuff, qBuffSize, 0);
+				send(Sockets[MQTT_SOCKET].number, txBuff, qBuffSize, 0);
 
-			recv(Sockets[MQTT_SOCKET].number, qBuff,
+			recv(Sockets[MQTT_SOCKET].number, rxBuff,
 					sizeof(TCP_RX_SOCKET_BUFFER_SIZE), 0);
 
 			m2m_wifi_handle_events(NULL);
