@@ -412,7 +412,7 @@ int SocketSend(uint8_t socketN, unsigned char * buf, int len, int timeout) {
 	vTaskSetTimeOutState(&xTimeOut);
 
 	//while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE) {
-	HAL_Delay(1);
+	//HAL_Delay(1);
 	m2m_wifi_handle_events(NULL);
 	//	if (skTx > 0)
 	//break;
