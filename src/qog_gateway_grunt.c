@@ -29,7 +29,7 @@
 #include "gpio.h"
 #include "adc.h"
 
-#define OVS_GRUNT_LOOP_MS 20000
+#define OVS_GRUNT_LOOP_MS 1000
 
 static Gateway m_gateway;
 
@@ -69,6 +69,54 @@ void gw_init_gateway() {
 	m_gateway.EdgeChannels[3].Id = 4;
 	m_gateway.EdgeChannels[3].Period = 1;
 
+//	m_gateway.EdgeChannels[4].Enabled = true;
+//	m_gateway.EdgeChannels[4].Id = 5;
+//	m_gateway.EdgeChannels[4].Period = 1;
+//
+//	m_gateway.EdgeChannels[5].Enabled = true;
+//	m_gateway.EdgeChannels[5].Id = 6;
+//	m_gateway.EdgeChannels[5].Period = 1;
+//
+//	m_gateway.EdgeChannels[6].Enabled = true;
+//	m_gateway.EdgeChannels[6].Id = 7;
+//	m_gateway.EdgeChannels[6].Period = 1;
+//
+//	m_gateway.EdgeChannels[7].Enabled = true;
+//	m_gateway.EdgeChannels[7].Id = 8;
+//	m_gateway.EdgeChannels[7].Period = 1;
+//
+//	m_gateway.EdgeChannels[8].Enabled = true;
+//	m_gateway.EdgeChannels[8].Id = 9;
+//	m_gateway.EdgeChannels[8].Period = 1;
+//
+//	m_gateway.EdgeChannels[9].Enabled = true;
+//	m_gateway.EdgeChannels[9].Id = 10;
+//	m_gateway.EdgeChannels[9].Period = 1;
+//
+//	m_gateway.EdgeChannels[10].Enabled = true;
+//	m_gateway.EdgeChannels[10].Id = 11;
+//	m_gateway.EdgeChannels[10].Period = 1;
+//
+//	m_gateway.EdgeChannels[11].Enabled = true;
+//	m_gateway.EdgeChannels[11].Id = 12;
+//	m_gateway.EdgeChannels[11].Period = 1;
+//
+//	m_gateway.EdgeChannels[12].Enabled = true;
+//	m_gateway.EdgeChannels[12].Id = 13;
+//	m_gateway.EdgeChannels[12].Period = 1;
+//
+//	m_gateway.EdgeChannels[13].Enabled = true;
+//	m_gateway.EdgeChannels[13].Id = 14;
+//	m_gateway.EdgeChannels[13].Period = 1;
+//
+//	m_gateway.EdgeChannels[14].Enabled = true;
+//	m_gateway.EdgeChannels[14].Id = 15;
+//	m_gateway.EdgeChannels[14].Period = 1;
+//
+//	m_gateway.EdgeChannels[15].Enabled = true;
+//	m_gateway.EdgeChannels[15].Id = 16;
+	m_gateway.EdgeChannels[15].Period = 1;
+
 	m_gateway.MQTTMutex = xSemaphoreCreateMutex();
 	m_gateway.LocalStorageMutex = xSemaphoreCreateMutex();
 
@@ -104,8 +152,8 @@ static void gw_init_shared_queues() {
 static void gw_init_tasks() {
 	gw_init_shared_queues();
 
-	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityNormal, 1,
-			m_gateway.Tasks.WifiTask->requestedHeap);
+	osThreadDef(WifiTask, m_gateway.Tasks.WifiTask->Task, osPriorityAboveNormal,
+			1, m_gateway.Tasks.WifiTask->requestedHeap);
 	m_gateway.Tasks.WifiTask->Handle = osThreadCreate(osThread(WifiTask),
 			&m_gateway);
 
@@ -187,21 +235,26 @@ void gwDropEdge(Edge* ed) {
 
 void gwPushNumberData(double val, uint32_t channel, uint32_t timestamp) {
 	uint8_t avail;
-	xQueueReceive(m_gateway.DataSourceQs.DataAvailableQueue, &avail, 10);
+	xQueueReceive(m_gateway.DataSourceQs.DataAvailableQueue, &avail,
+			portMAX_DELAY);
 
 	m_gateway.DataSampleBuffer[avail].channelId = channel;
 	m_gateway.DataSampleBuffer[avail].numData.timestamp = timestamp;
 	m_gateway.DataSampleBuffer[avail].numData.value = val;
 
-	xQueueSend(m_gateway.DataSourceQs.DataUsedQueue, &avail, 10);
+	xQueueSend(m_gateway.DataSourceQs.DataUsedQueue, &avail, portMAX_DELAY);
+	/*qog_gw_util_debug_msg("PUSH C:%d V:%2.2f Time:%d",
+	 m_gateway.DataSampleBuffer[avail].channelId,
+	 m_gateway.DataSampleBuffer[avail].numData.value,
+	 m_gateway.DataSampleBuffer[avail].numData.timestamp);*/
 }
 
 bool gwPopNumberData(OVS_ChannelNumberData ** out) {
 	uint8_t idx = 0;
 	if (xQueueReceive(m_gateway.DataSourceQs.DataUsedQueue, &idx,
-			10) != errQUEUE_EMPTY) {
+			100) != errQUEUE_EMPTY) {
 		*out = &m_gateway.DataSampleBuffer[idx];
-		xQueueSend(m_gateway.DataSourceQs.DataAvailableQueue, &idx, 10);
+		xQueueSend(m_gateway.DataSourceQs.DataAvailableQueue, &idx, 100);
 		return true;
 	}
 	return false;
@@ -213,10 +266,12 @@ void GruntTaskImpl(void const * argument) {
 	TickType_t xLastWakeTime;
 	const TickType_t xFrequency = portTICK_PERIOD_MS * OVS_GRUNT_LOOP_MS;
 
+	uint8_t diagMsgCtr = 0;
+	const uint8_t diagMsgDelay = 20;
 	xLastWakeTime = xTaskGetTickCount();
 	for (;;) {
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
+		m_gateway.TimeStamp++;
 		//Update Battery Level
 		HAL_ADC_Start(&hadc);
 		if (HAL_ADC_PollForConversion(&hadc, 100) == HAL_OK) {
@@ -226,16 +281,19 @@ void GruntTaskImpl(void const * argument) {
 			m_gateway.Diagnostics.BatteryLevel = 0;
 		HAL_ADC_Stop(&hadc);
 
-		m_gateway.Diagnostics.Uptime+=OVS_GRUNT_LOOP_MS/1000;
+		m_gateway.Diagnostics.Uptime += OVS_GRUNT_LOOP_MS / 1000;
 
-		GatewayCommand cmd = { GW_STATUS, (void *) &m_gateway.Diagnostics };
-		xQueueSend(m_gateway.CommandQueue, &cmd, 0);
+		if ((diagMsgCtr++) % diagMsgDelay == 0) {
+			GatewayCommand cmd = { GW_STATUS, (void *) &m_gateway.Diagnostics };
+			xQueueSend(m_gateway.CommandQueue, &cmd, 0);
 
-		qog_gw_util_debug_msg("Gateway Status");
-		qog_gw_util_debug_msg("Battery Level = %d",m_gateway.Diagnostics.BatteryLevel);
-		qog_gw_util_debug_msg("Uptime = %d",m_gateway.Diagnostics.Uptime);
-		qog_gw_util_debug_msg("Message Publish Fail = %d",m_gateway.Diagnostics.MsgPublishFails);
-
+			qog_gw_util_debug_msg("Gateway Status");
+			qog_gw_util_debug_msg("Battery Level = %d",
+					m_gateway.Diagnostics.BatteryLevel);
+			qog_gw_util_debug_msg("Uptime = %d", m_gateway.Diagnostics.Uptime);
+			qog_gw_util_debug_msg("Message Publish Fail = %d",
+					m_gateway.Diagnostics.MsgPublishFails);
+		}
 	}
 }
 

@@ -21,7 +21,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-
+#include "qog_util_ring_buffer.h"
 //-------- Gateway Interface - START
 static uint8_t NTP_Buffer[48];
 
@@ -33,6 +33,11 @@ static qog_Task WifiTaskImpl(Gateway * gwInst);
 qog_gateway_task WifiTaskDef = { &WifiTaskImpl, WIFI_TASK_HEAP, NULL };
 //-------- Gateway Interface - END
 
+static int16_t skRx = 0;
+static int16_t skTx = 0;
+static bool rxFlag = false;
+uint8_t * rxBufPtr = 0;
+
 #define MAX_OPEN_SOCKETS 8
 typedef enum {
 	SocketClosed = 0, SocketConnected, SocketWaiting, SocketError
@@ -43,8 +48,10 @@ static struct {
 	SOCKET number;
 } Sockets[MAX_OPEN_SOCKETS];
 
-static uint8_t txBuff[TCP_RX_SOCKET_BUFFER_SIZE];
+//static uint8_t txBuff[TCP_RX_SOCKET_BUFFER_SIZE];
+static uint8_t rxStore[TCP_RX_SOCKET_BUFFER_SIZE];
 static uint8_t rxBuff[TCP_RX_SOCKET_BUFFER_SIZE];
+static ring_buffer_t rxRingBuf;
 
 uint32_t resolvedHostIp = 0x0;
 
@@ -87,7 +94,8 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 	}
 		/* Message send */
 	case SOCKET_MSG_SEND: {
-//		int16_t bytesSent = *(int16_t *) pvMsg;
+		skTx = *(int16_t*) pvMsg;
+		//qog_gw_util_debug_msg("sent %d", skTx);
 	}
 		break;
 		/* Message receive */
@@ -121,20 +129,26 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 	case SOCKET_MSG_RECV: {
 		tstrSocketRecvMsg *pstrRecv = (tstrSocketRecvMsg *) pvMsg;
 		if (pstrRecv && pstrRecv->s16BufferSize > 0) {
-			uint16_t idx = 0;
-			while (idx++ < pstrRecv->s16BufferSize) {
-				xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
-						0);
-			}
+			//uint16_t idx = 0;
+			skRx += pstrRecv->s16BufferSize;
+			ring_buffer_push_buffer_queue(&rxRingBuf, pstrRecv->pu8Buffer);
+			//		qog_gw_util_debug_msg("recv %d", skRx);
+			//		qog_gw_util_debug_msg("%2x", *pstrRecv->pu8Buffer);
+			//memcpy(rxBufPtr++,pstrRecv->pu8Buffer,pstrRecv->s16BufferSize);
+			/*	while (idx++ < pstrRecv->s16BufferSize) {
+			 xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
+			 0);
+			 }*/
+			rxFlag = true;
 		} else {
+			//skRx = -1;
 			close(Sockets[MQTT_SOCKET].number);
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
-		break;
-
-		default:
-		break;
 	}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -388,9 +402,56 @@ void wifiInit() {
 	}
 	GatewaySocketInit();
 }
+int SocketSend(uint8_t socketN, unsigned char * buf, int len, int timeout) {
+	skTx = 0;
+	if (send(socketN, buf, len, timeout) != SOCK_ERR_NO_ERROR)
+		return -1;
+	TickType_t xTicksToWait = timeout;
+	TimeOut_t xTimeOut;
 
+	vTaskSetTimeOutState(&xTimeOut);
+
+	//while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE) {
+	HAL_Delay(1);
+	m2m_wifi_handle_events(NULL);
+	//	if (skTx > 0)
+	//break;
+	//	HAL_Delay(2);
+	//}
+	//return skTx;
+	return len;
+}
+int SocketRecv(uint8_t socketN, unsigned char * buf, int len, int timeout) {
+	skRx = 0;
+
+	if (ring_buffer_is_empty(&rxRingBuf)) {
+		if (recv(socketN, rxBuff, len, timeout) != SOCK_ERR_NO_ERROR)
+			return -1;
+
+		TickType_t xTicksToWait = timeout;
+		TimeOut_t xTimeOut;
+
+		vTaskSetTimeOutState(&xTimeOut);
+		while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE) {
+			m2m_wifi_handle_events(NULL);
+			if (skRx >= len) {
+				break;
+			}
+			HAL_Delay(2);
+		}
+	}
+	uint8_t asd = len;
+	while (asd > 0) {
+
+		ring_buffer_pop_buffer_queue(&rxRingBuf, buf++);
+		asd--;
+	}
+	return len;
+
+}
 qog_Task WifiTaskImpl(Gateway * gwInst) {
 	m_gatewayInst = gwInst;
+	ring_buffer_init(&rxRingBuf, sizeof(rxStore), rxStore);
 
 	WLANConnectionParams asd = { 0 };
 	m_gatewayInst->WLANConnection = asd;
@@ -440,22 +501,22 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_BROKER_SOCKET_OPEN: {
-			uint16_t qBuffSize = 0;
-			uint16_t qSize = uxQueueMessagesWaiting(
-					m_gatewayInst->SocketTxQueue);
+			/*	uint16_t qBuffSize = 0;
+			 uint16_t qSize = uxQueueMessagesWaiting(
+			 m_gatewayInst->SocketTxQueue);
 
-			while (qSize > 0) {
-				xQueueReceive(m_gatewayInst->SocketTxQueue, &txBuff[qBuffSize++],
-						0);
-				qSize--;
-			}
-			if (qBuffSize)
-				send(Sockets[MQTT_SOCKET].number, txBuff, qBuffSize, 0);
+			 while (qSize > 0) {
+			 xQueueReceive(m_gatewayInst->SocketTxQueue,
+			 &txBuff[qBuffSize++], 0);
+			 qSize--;
+			 }
+			 if (qBuffSize)
+			 send(Sockets[MQTT_SOCKET].number, txBuff, qBuffSize, 0);
 
-			recv(Sockets[MQTT_SOCKET].number, rxBuff,
-					sizeof(TCP_RX_SOCKET_BUFFER_SIZE), 0);
-
-			m2m_wifi_handle_events(NULL);
+			 recv(Sockets[MQTT_SOCKET].number, rxBuff,
+			 sizeof(TCP_RX_SOCKET_BUFFER_SIZE), 0);
+			 */
+			//m2m_wifi_handle_events(NULL);
 		}
 			break;
 		case GW_MQTT_CLIENT_CONNECTED:

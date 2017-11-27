@@ -127,7 +127,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 		uint32_t thisTime = 0;
 
 		if (m_gateway->TimeStamp) {
-			m_gateway->TimeStamp++;
+		//	m_gateway->TimeStamp++;
 			thisTime = m_gateway->TimeStamp;
 		} else
 			continue;

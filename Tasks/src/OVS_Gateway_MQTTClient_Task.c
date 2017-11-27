@@ -43,12 +43,15 @@ static enum {
 
 static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
+	TickType_t finish = 0;
+	TickType_t start = xTaskGetTickCount();
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
 			gw->Status = MQTT_CLIENT_DISCONNECTED;
 			break;
 		}
+
 		if (MQTTPublish(&client, (char*) topic, msg) == MQTT_SUCCESS) {
 			break;
 		} else {
@@ -60,6 +63,8 @@ static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 			vTaskDelay(MQTT_CLIENT_PUBLISH_RETRY_DELAY_MS);
 		}
 	}
+	finish = xTaskGetTickCount() - start;
+	qog_gw_util_debug_msg("t:%d", finish);
 	return false;
 }
 
@@ -104,6 +109,9 @@ static void MessageHandler(MessageData * data) {
 }
 
 static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
+	TickType_t xLastWakeTime;
+	const TickType_t xFrequency = MQTT_TASK_LOOP_MS;
+
 	gw = (Gateway*) gwInst;
 	uint8_t gwTopic[OVS_MQTT_PUB_TOPIC_SIZE + OVS_MQTT_PUB_TOPIC_SZE_WILDCARD];
 	network.SockRxQueue = gw->SocketRxQueue;
@@ -122,8 +130,10 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	conn.cleansession = false;
 	conn.keepAliveInterval = 120;
 
+	// Initialise the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
 	for (;;) {
-		vTaskDelay(MQTT_TASK_LOOP_MS);
+		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 		switch (MQTTClientState) {
 		case MQTT_CLIENT_RESET: {
 			MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
@@ -157,14 +167,22 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		}
 			break;
 		case MQTT_CLIENT_CONNECTED: {
+			TickType_t finish = 0;
 
-			if (gw->Status != GW_BROKER_SOCKET_OPEN)
+			if (gw->Status != GW_BROKER_SOCKET_OPEN) {
 				MQTTClientState = MQTT_CLIENT_RESET;
+				break;
+			}
 
-			if (uxQueueSpacesAvailable(
-					gw->DataSourceQs.DataUsedQueue) < MAX_SAMPLE_BUFFER_SIZE) {
+			uint32_t avail = uxQueueSpacesAvailable(
+					gw->DataSourceQs.DataAvailableQueue);
+
+			if (avail > 0) {
 				publishData();
 			}
+
+			//qog_gw_util_debug_msg("Used Queue Size : %d", used);
+			//qog_gw_util_debug_msg("Queue Size : %d", avail);
 
 			//TODO ler fila de comandos OVS
 			while (uxQueueMessagesWaiting(gw->CommandQueue)) {
@@ -189,7 +207,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 						break;
 					}
 			}
-			MQTTYield(&client, 50);
+			//MQTTYield(&client, 250);
 		}
 			break;
 		default:
@@ -209,8 +227,10 @@ void publishData() {
 	if (gw->CB.gwPopNumberData(&sample) == false) {
 		return;
 	}
+	//qog_gw_util_debug_msg("POP C:%d V:%2.2f Time:%d", sample->channelId,
+	//		sample->numData.value, sample->numData.timestamp);
+	//sample->has_numData = true;
 
-	sample->has_numData = true;
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
 	pb_encode(&ostream, OVS_ChannelNumberData_fields, sample);
 	sprintf((char*) &topic, "/channel/%lu/protobuf/data", sample->channelId);
