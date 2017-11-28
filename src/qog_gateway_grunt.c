@@ -69,22 +69,22 @@ void gw_init_gateway() {
 	m_gateway.EdgeChannels[3].Id = 4;
 	m_gateway.EdgeChannels[3].Period = 1;
 
-//	m_gateway.EdgeChannels[4].Enabled = true;
-//	m_gateway.EdgeChannels[4].Id = 5;
-//	m_gateway.EdgeChannels[4].Period = 1;
-//
-//	m_gateway.EdgeChannels[5].Enabled = true;
-//	m_gateway.EdgeChannels[5].Id = 6;
-//	m_gateway.EdgeChannels[5].Period = 1;
-//
-//	m_gateway.EdgeChannels[6].Enabled = true;
-//	m_gateway.EdgeChannels[6].Id = 7;
-//	m_gateway.EdgeChannels[6].Period = 1;
-//
-//	m_gateway.EdgeChannels[7].Enabled = true;
-//	m_gateway.EdgeChannels[7].Id = 8;
-//	m_gateway.EdgeChannels[7].Period = 1;
-//
+	m_gateway.EdgeChannels[4].Enabled = true;
+	m_gateway.EdgeChannels[4].Id = 5;
+	m_gateway.EdgeChannels[4].Period = 1;
+
+	m_gateway.EdgeChannels[5].Enabled = true;
+	m_gateway.EdgeChannels[5].Id = 6;
+	m_gateway.EdgeChannels[5].Period = 1;
+
+	m_gateway.EdgeChannels[6].Enabled = true;
+	m_gateway.EdgeChannels[6].Id = 7;
+	m_gateway.EdgeChannels[6].Period = 1;
+
+	m_gateway.EdgeChannels[7].Enabled = true;
+	m_gateway.EdgeChannels[7].Id = 8;
+	m_gateway.EdgeChannels[7].Period = 1;
+
 //	m_gateway.EdgeChannels[8].Enabled = true;
 //	m_gateway.EdgeChannels[8].Id = 9;
 //	m_gateway.EdgeChannels[8].Period = 1;
@@ -115,7 +115,7 @@ void gw_init_gateway() {
 //
 //	m_gateway.EdgeChannels[15].Enabled = true;
 //	m_gateway.EdgeChannels[15].Id = 16;
-	m_gateway.EdgeChannels[15].Period = 1;
+//	m_gateway.EdgeChannels[15].Period = 1;
 
 	m_gateway.MQTTMutex = xSemaphoreCreateMutex();
 	m_gateway.LocalStorageMutex = xSemaphoreCreateMutex();

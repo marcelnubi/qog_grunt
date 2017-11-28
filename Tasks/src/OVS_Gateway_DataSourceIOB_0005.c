@@ -63,7 +63,7 @@ void DataSourceConfig(uint8_t channelNumber, uint8_t * configBytes) {
 double DataSourceNumberRead(uint8_t channelNumber) {
 	double temperature = 0;
 
-	switch (channelNumber) {
+	switch (channelNumber % 4) {
 	case 0: {
 		HAL_ADC_Start(&hadc);
 		if (HAL_ADC_PollForConversion(&hadc, 50) == HAL_OK) {

@@ -167,7 +167,6 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		}
 			break;
 		case MQTT_CLIENT_CONNECTED: {
-			TickType_t finish = 0;
 
 			if (gw->Status != GW_BROKER_SOCKET_OPEN) {
 				MQTTClientState = MQTT_CLIENT_RESET;
@@ -177,7 +176,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			uint32_t avail = uxQueueSpacesAvailable(
 					gw->DataSourceQs.DataAvailableQueue);
 
-			if (avail > 0) {
+			while (avail-- > 0) {
 				publishData();
 			}
 
@@ -185,7 +184,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			//qog_gw_util_debug_msg("Queue Size : %d", avail);
 
 			//TODO ler fila de comandos OVS
-			while (uxQueueMessagesWaiting(gw->CommandQueue)) {
+			if (uxQueueMessagesWaiting(gw->CommandQueue)) {
 				GatewayCommand dt = { };
 				if (xQueueReceive(gw->CommandQueue, &dt, 0) != errQUEUE_EMPTY)
 					switch (dt.Command) {
@@ -206,8 +205,8 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					default:
 						break;
 					}
+				HAL_Delay(100);
 			}
-			//MQTTYield(&client, 250);
 		}
 			break;
 		default:
