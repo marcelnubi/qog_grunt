@@ -43,8 +43,8 @@ static enum {
 
 static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
-//	TickType_t finish = 0;
-//	TickType_t start = xTaskGetTickCount();
+	TickType_t finish = 0;
+	TickType_t start = xTaskGetTickCount();
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
@@ -60,11 +60,11 @@ static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 			if (retry == 0)
 				return true;
 
-			vTaskDelay(MQTT_CLIENT_PUBLISH_RETRY_DELAY_MS);
+			vTaskDelay(MQTT_CLIENT_PUBLISH_RETRY_DELAY_MS*3);
 		}
 	}
-//	finish = xTaskGetTickCount() - start;
-//	qog_gw_util_debug_msg("t:%d", finish);
+	finish = xTaskGetTickCount() - start;
+	qog_gw_util_debug_msg("t:%d", finish);
 	return false;
 }
 
@@ -179,7 +179,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 
 			while (avail-- > 0) {
 				publishData();
-				HAL_Delay(5);
+				HAL_Delay(50);
 			}
 
 			//TODO ler fila de comandos OVS
