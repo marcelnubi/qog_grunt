@@ -178,10 +178,8 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 
 			while (avail-- > 0) {
 				publishData();
+				HAL_Delay(5);
 			}
-
-			//qog_gw_util_debug_msg("Used Queue Size : %d", used);
-			//qog_gw_util_debug_msg("Queue Size : %d", avail);
 
 			//TODO ler fila de comandos OVS
 			if (uxQueueMessagesWaiting(gw->CommandQueue)) {
