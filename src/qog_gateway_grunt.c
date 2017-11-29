@@ -273,7 +273,10 @@ void GruntTaskImpl(void const * argument) {
 	xLastWakeTime = xTaskGetTickCount();
 	for (;;) {
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		m_gateway.TimeStamp++;
+		if (m_gateway.TimeStamp) {
+			qog_gw_util_debug_msg("Local Time: %d", m_gateway.TimeStamp++);
+		}
+
 		//Update Battery Level
 		HAL_ADC_Start(&hadc);
 		if (HAL_ADC_PollForConversion(&hadc, 100) == HAL_OK) {
