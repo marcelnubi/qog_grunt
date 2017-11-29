@@ -131,6 +131,8 @@ typedef struct {
 } GatewayCallbacks;
 
 struct Gateway {
+	bool StopAll;
+
 	WLANConnectionParams WLANConnection;
 	BrokerParams BrokerParams;
 

@@ -52,6 +52,8 @@ void gw_init_gateway() {
 	sprintf((char*) m_gateway.BrokerParams.Username, "admin");
 	sprintf((char*) m_gateway.BrokerParams.Password, "qognata");
 
+	m_gateway.StopAll = true;
+
 	//TODO Sync Channel/Edge
 	m_gateway.EdgeChannels[0].Enabled = true;
 	m_gateway.EdgeChannels[0].Id = 1;

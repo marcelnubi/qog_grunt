@@ -107,7 +107,7 @@ struct {
 static qog_Task DataSourceTaskImpl(Gateway * gwInst);
 
 qog_gateway_task DataSourceTaskDef = { &DataSourceTaskImpl,
-		DATASOURCER_TASK_HEAP, NULL };
+DATASOURCER_TASK_HEAP, NULL };
 
 qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 	m_gateway = gwInst;
@@ -126,8 +126,8 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 		uint32_t thisTime = 0;
 
-		if (m_gateway->TimeStamp) {
-		//	m_gateway->TimeStamp++;
+		if (m_gateway->TimeStamp && m_gateway->StopAll == false) {
+			//	m_gateway->TimeStamp++;
 			thisTime = m_gateway->TimeStamp;
 		} else
 			continue;

@@ -43,8 +43,8 @@ static enum {
 
 static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 	uint8_t retry = MQTT_CLIENT_PUBLISH_RETRY;
-	TickType_t finish = 0;
-	TickType_t start = xTaskGetTickCount();
+//	TickType_t finish = 0;
+//	TickType_t start = xTaskGetTickCount();
 	while (retry > 0) {
 		if (!client.isconnected) {
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
@@ -63,8 +63,8 @@ static bool publishMessage(MQTTMessage* msg, uint8_t* topic) {
 			vTaskDelay(MQTT_CLIENT_PUBLISH_RETRY_DELAY_MS);
 		}
 	}
-	finish = xTaskGetTickCount() - start;
-	qog_gw_util_debug_msg("t:%d", finish);
+//	finish = xTaskGetTickCount() - start;
+//	qog_gw_util_debug_msg("t:%d", finish);
 	return false;
 }
 
@@ -140,6 +140,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
 			gw->Status = GW_MQTT_CLIENT_DISCONNECTED;
+			gwInst->StopAll = true;
 		}
 			break;
 		case MQTT_CLIENT_DISCONNECTED: {
@@ -159,7 +160,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					sprintf((char*) gwTopic, "/gateway/%s/cmd/+", gid.x);
 					MQTTSubscribe(&client, (char*) gwTopic, QOS2,
 							MessageHandler);
-
+					gwInst->StopAll = false;
 				} else {
 					vTaskDelay(MQTT_CONNECT_RETRY_DELAY_MS - MQTT_TASK_LOOP_MS);
 				}
