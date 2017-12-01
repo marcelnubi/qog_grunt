@@ -192,8 +192,20 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 				HAL_Delay(50);
 			}
 
+			const uint8_t ms_cmd_check_timeout = 100;
+			TickType_t xTicksToWait = ms_cmd_check_timeout;
+			TimeOut_t xTimeOut;
+			vTaskSetTimeOutState(&xTimeOut);
+			do {
+				if (MQTTYield(&client, 0) != MQTT_SUCCESS) {
+					MQTTClientState = RESET;
+					break;
+				}
+				HAL_Delay(25);
+			} while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE);
+
 			//TODO ler fila de comandos OVS
-			if (uxQueueMessagesWaiting(gw->CommandQueue)) {
+			while (uxQueueMessagesWaiting(gw->CommandQueue)) {
 				GatewayCommand dt = { };
 				if (xQueueReceive(gw->CommandQueue, &dt, 0) != errQUEUE_EMPTY)
 					switch (dt.Command) {
@@ -214,13 +226,12 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					default:
 						break;
 					}
-				HAL_Delay(100);
 				if (ret) {
 					MQTTClientState = RESET;
 					break;
 				}
+				HAL_Delay(100);
 			}
-
 		}
 			break;
 		default:
