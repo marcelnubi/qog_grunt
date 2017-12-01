@@ -406,41 +406,46 @@ int SocketSend(uint8_t socketN, unsigned char * buf, int len, int timeout) {
 	skTx = 0;
 	if (send(socketN, buf, len, timeout) != SOCK_ERR_NO_ERROR)
 		return -1;
-	TickType_t xTicksToWait = timeout;
-	TimeOut_t xTimeOut;
-
-	vTaskSetTimeOutState(&xTimeOut);
 
 	m2m_wifi_handle_events(NULL);
 	return len;
 }
 int SocketRecv(uint8_t socketN, unsigned char * buf, int len, int timeout) {
-	skRx = 0;
+	uint8_t tempLen = len;
+	while (tempLen > 0) {
 
-	if (ring_buffer_is_empty(&rxRingBuf)) {
-		if (recv(socketN, rxBuff, len, timeout) != SOCK_ERR_NO_ERROR)
-			return -1;
+		if (ring_buffer_pop_buffer_queue(&rxRingBuf, buf) == -1) {
+			skRx = 0;
+			if (recv(socketN, rxBuff, tempLen, timeout) != SOCK_ERR_NO_ERROR)
+				return -1;
 
-		TickType_t xTicksToWait = timeout;
-		TimeOut_t xTimeOut;
+			TickType_t xTicksToWait = timeout;
+			TimeOut_t xTimeOut;
 
-		vTaskSetTimeOutState(&xTimeOut);
-		while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE) {
-			m2m_wifi_handle_events(NULL);
-			if (skRx >= len) {
-				break;
+			vTaskSetTimeOutState(&xTimeOut);
+			do {
+				HAL_Delay(20);
+				m2m_wifi_handle_events(NULL);
+				if (skRx >= tempLen) {
+					break;
+				}
+				HAL_Delay(10);
+			} while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE);
+
+			if ((0 < skRx) && (skRx < tempLen)) {
+				continue;
 			}
-			HAL_Delay(2);
+
+			if (!skRx) {
+				return len - tempLen;
+			}
+
+		} else {
+			buf++;
+			tempLen--;
 		}
 	}
-	uint8_t asd = len;
-	while (asd > 0) {
-
-		ring_buffer_pop_buffer_queue(&rxRingBuf, buf++);
-		asd--;
-	}
 	return len;
-
 }
 qog_Task WifiTaskImpl(Gateway * gwInst) {
 	m_gatewayInst = gwInst;
