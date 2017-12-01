@@ -142,6 +142,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 							+ MeasurementSchedule.Channels[idx].Period;
 				}
 			}
+			HAL_Delay(10);
 		}
 	}
 	return 0;
