@@ -132,6 +132,12 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 			//uint16_t idx = 0;
 			skRx += pstrRecv->s16BufferSize;
 			ring_buffer_push_buffer_queue(&rxRingBuf, pstrRecv->pu8Buffer);
+
+			if (pstrRecv->s16BufferSize == SOCK_ERR_TIMEOUT)
+				skRx = SOCK_ERR_TIMEOUT;
+
+			if (pstrRecv->s16BufferSize == SOCK_ERR_CONN_ABORTED)
+				skRx = SOCK_ERR_CONN_ABORTED;
 			//		qog_gw_util_debug_msg("recv %d", skRx);
 			//		qog_gw_util_debug_msg("%2x", *pstrRecv->pu8Buffer);
 			//memcpy(rxBufPtr++,pstrRecv->pu8Buffer,pstrRecv->s16BufferSize);
@@ -439,7 +445,8 @@ int SocketRecv(uint8_t socketN, unsigned char * buf, int len, int timeout) {
 			if (!skRx) {
 				return len - tempLen;
 			}
-
+			if (skRx < 0)
+				return skRx;
 		} else {
 			buf++;
 			tempLen--;
