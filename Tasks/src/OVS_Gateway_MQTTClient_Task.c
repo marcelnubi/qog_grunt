@@ -133,7 +133,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
 	conn.clientID.cstring = (char*) gid.x;
 	conn.cleansession = false;
-	conn.keepAliveInterval = 120;
+	conn.keepAliveInterval = 30;
 
 	// Initialise the xLastWakeTime variable with the current time.
 	xLastWakeTime = xTaskGetTickCount();
@@ -167,6 +167,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 							MessageHandler);
 					gwInst->StopAll = false;
 				} else {
+					MQTTClientState = RESET;
 					vTaskDelay(MQTT_CONNECT_RETRY_DELAY_MS - MQTT_TASK_LOOP_MS);
 				}
 			}
