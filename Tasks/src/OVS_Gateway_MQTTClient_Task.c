@@ -202,7 +202,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 					MQTTClientState = RESET;
 					break;
 				}
-				HAL_Delay(25);
+				HAL_Delay(50);
 			} while (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdFALSE);
 
 			//TODO ler fila de comandos OVS
