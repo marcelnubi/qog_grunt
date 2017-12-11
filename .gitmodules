@@ -1,18 +1,21 @@
-[submodule "mqtt_c_client"]
-	path = mqtt_c_client
-	url = https://bitbucket.org/qogni/mqtt_c_client.git
-[submodule "winc_1500_lib"]
-	path = winc_1500_lib
-	url = https://bitbucket.org/qogni/winc_1500_lib.git
-[submodule "overseer_messages"]
-	path = overseer_messages
-	url = https://bitbucket.org/qogni/overseer_messages.git
-[submodule "nanopb"]
-	path = nanopb
+[submodule "dep/mqtt_c_client"]
+	path = dep/mqtt_c_client
+	url = https://bitbucket.org/qogni/mqtt_c_client
+[submodule "dep/nanopb"]
+	path = dep/nanopb
 	url = https://github.com/marcelnubi/nanopb.git
-[submodule "wsn_lib"]
-	path = wsn_lib
-	url = https://bitbucket.org/qogni/wsn_lib
-[submodule "std_fw_lib_util"]
-	path = std_fw_lib_util
-	url = https://bitbucket.org/qogni/std_fw_lib_util
+[submodule "dep/overseer_messages"]
+	path = dep/overseer_messages
+	url = https://MarcelMello@bitbucket.org/qogni/overseer_messages.git
+[submodule "dep/std_fw_lib_util"]
+	path = dep/std_fw_lib_util
+	url = https://MarcelMello@bitbucket.org/qogni/std_fw_lib_util.git
+[submodule "dep/winc_1500_lib"]
+	path = dep/winc_1500_lib
+	url = https://MarcelMello@bitbucket.org/qogni/winc_1500_lib.git
+[submodule "dep/wsn_lib"]
+	path = dep/wsn_lib
+	url = https://MarcelMello@bitbucket.org/qogni/wsn_lib.git
+[submodule "iob/iob_0005"]
+	path = iob/iob_0005
+	url = https://MarcelMello@bitbucket.org/qogni/iob_0005.git
