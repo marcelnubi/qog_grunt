@@ -133,11 +133,17 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 			skRx += pstrRecv->s16BufferSize;
 			ring_buffer_push_buffer_queue(&rxRingBuf, pstrRecv->pu8Buffer);
 
-			if (pstrRecv->s16BufferSize == SOCK_ERR_TIMEOUT)
+			if (pstrRecv->s16BufferSize == SOCK_ERR_TIMEOUT){
 				skRx = SOCK_ERR_TIMEOUT;
+				qog_gw_util_debug_msg("Socket TIMEOUT");
+			}
 
-			if (pstrRecv->s16BufferSize == SOCK_ERR_CONN_ABORTED)
+
+			if (pstrRecv->s16BufferSize == SOCK_ERR_CONN_ABORTED){
 				skRx = SOCK_ERR_CONN_ABORTED;
+				qog_gw_util_debug_msg("Socket CONN ABORTED");
+			}
+
 			//		qog_gw_util_debug_msg("recv %d", skRx);
 			//		qog_gw_util_debug_msg("%2x", *pstrRecv->pu8Buffer);
 			//memcpy(rxBufPtr++,pstrRecv->pu8Buffer,pstrRecv->s16BufferSize);
@@ -231,11 +237,23 @@ static void dns_resolve_cb(uint8_t *hostName, uint32_t hostIp) {
 
 static qog_gw_error_t GatewaySocketOpen(uint32_t timeout, uint8_t SockNumber,
 		uint32_t SockHost, uint16_t SockPort) {
+	qog_gw_error_t ret = GW_e_OK;
+	TickType_t xTicksToWait = timeout;
+	TimeOut_t xTimeOut;
+
+	vTaskSetTimeOutState(&xTimeOut);
+
 	close(Sockets[SockNumber].number);
 	Sockets[SockNumber].status = SocketClosed;
 	m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 
 	while (Sockets[SockNumber].status != SocketConnected) {
+
+		if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE) {
+			ret = GW_e_SOCKET_ERROR;
+			break;
+		}
+
 		switch (Sockets[SockNumber].status) {
 		case SocketClosed: {
 			struct sockaddr_in addr_in;
@@ -266,7 +284,7 @@ static qog_gw_error_t GatewaySocketOpen(uint32_t timeout, uint8_t SockNumber,
 		//send tx queue byte
 		//TODO timeout
 	}
-	return GW_e_OK;
+	return ret;
 }
 
 static void GatewayWaitForStatusChange(Gateway* m_gatewayInst,
@@ -502,6 +520,8 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 					m_gatewayInst->BrokerParams.HostIp,
 					m_gatewayInst->BrokerParams.HostPort) == GW_e_OK)
 				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
+			else
+				m_gatewayInst->Status = GW_ERROR;
 
 			//TODO retry counter
 			break;
