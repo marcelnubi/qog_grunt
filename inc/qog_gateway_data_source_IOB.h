@@ -12,6 +12,6 @@
 
 void DataSourceInit(Gateway *);
 void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
-double DataSourceNumberRead(uint8_t channelNumber);
+double DataSourceNumberRead(OVS_EdgeId * edgeId);
 
 #endif /* DATASOURCEAPI_H_ */

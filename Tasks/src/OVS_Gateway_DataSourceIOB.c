@@ -47,10 +47,15 @@ void __attribute__((weak)) DataSourceInit(Gateway * gw) {
 void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
 		uint8_t * configBytes) {
 }
-double __attribute__((weak)) DataSourceNumberRead(uint8_t channelNumber) {
+double __attribute__((weak)) DataSourceNumberRead(OVS_EdgeId * IobEdge) {
 	double temperature = 0;
 
-	switch (channelNumber) {
+	OVS_Edge_IOB_id edge;
+	pb_istream_t istream = pb_istream_from_buffer(IobEdge->Id.bytes,
+			IobEdge->Id.size);
+	pb_decode(&istream, OVS_Edge_IOB_id_fields, &edge);
+
+	switch (edge.IobEdge) {
 	case 0: {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Master_Receive(&hi2c2, 0x14 << 1, dasd, 2, 100) != HAL_OK) {
@@ -135,7 +140,7 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 		for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
 			if (MeasurementSchedule.Channels[idx].Enabled == true) {
 				if (MeasurementSchedule.NextMeasurement[idx] <= thisTime) {
-					currentVal = DataSourceNumberRead(idx);
+					currentVal = DataSourceNumberRead(&MeasurementSchedule.Channels[idx].EdgeId);
 					m_gateway->CB.gwPushNumberData(currentVal,
 							MeasurementSchedule.Channels[idx].Id, thisTime);
 					MeasurementSchedule.NextMeasurement[idx] = thisTime
