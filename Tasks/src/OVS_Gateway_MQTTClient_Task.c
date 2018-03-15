@@ -133,7 +133,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
 	conn.clientID.cstring = (char*) gid.x;
 	conn.cleansession = false;
-	conn.keepAliveInterval = 30;
+	conn.keepAliveInterval = 5*MQTT_TASK_LOOP_MS/1000;
 
 	// Initialise the xLastWakeTime variable with the current time.
 	xLastWakeTime = xTaskGetTickCount();
@@ -141,6 +141,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 		switch (MQTTClientState) {
 		case MQTT_CLIENT_RESET: {
+			qog_gw_util_debug_msg("MQTT : MQTT_CLIENT_RESET");
 			MQTTClientInit(&client, &network, MQTT_TIMEOUT_MS, txBuf,
 			MQTT_TX_BUFFER_SIZE, rxBuf, MQTT_RX_BUFFER_SIZE);
 			MQTTClientState = MQTT_CLIENT_DISCONNECTED;
@@ -149,6 +150,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 		}
 			break;
 		case MQTT_CLIENT_DISCONNECTED: {
+			qog_gw_util_debug_msg("MQTT : MQTT_CLIENT_DISCONNECTED");
 			if (gw->Status == GW_BROKER_SOCKET_OPEN) {
 				if (!MQTTConnect(&client, &conn)) {
 					MQTTClientState = MQTT_CLIENT_CONNECTED;
@@ -167,14 +169,14 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 							MessageHandler);
 					gwInst->StopAll = false;
 				} else {
-					MQTTClientState = RESET;
+					MQTTClientState = MQTT_CLIENT_RESET;
 					vTaskDelay(MQTT_CONNECT_RETRY_DELAY_MS - MQTT_TASK_LOOP_MS);
 				}
 			}
 		}
 			break;
 		case MQTT_CLIENT_CONNECTED: {
-
+			qog_gw_util_debug_msg("MQTT : MQTT_CLIENT_CONNECTED");
 			bool ret = true;
 
 			if (gw->Status != GW_BROKER_SOCKET_OPEN) {
@@ -196,7 +198,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 				HAL_Delay(25);
 			}
 			finish = xTaskGetTickCount() - start;
-			qog_gw_util_debug_msg("t:%d q:%d",finish, asd);
+			qog_gw_util_debug_msg("t:%d q:%d", finish, asd);
 
 			const uint8_t ms_cmd_check_timeout = 100;
 			TickType_t xTicksToWait = ms_cmd_check_timeout;

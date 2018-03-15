@@ -14,6 +14,7 @@
 qog_gw_error_t qog_gw_sys_getUri(GatewayId *);
 uint32_t qog_gw_sys_getTimestamp();
 qog_gw_error_t qog_gw_sys_setTime(qog_DateTime *);
+void qog_gw_sys_swReset();
 
 extern void HAL_Delay(volatile uint32_t Delay);
 

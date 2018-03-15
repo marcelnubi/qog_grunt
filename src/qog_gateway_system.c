@@ -16,9 +16,10 @@ qog_gw_error_t qog_gw_sys_getUri(GatewayId * id) {
 	uint8_t bf[12];
 
 	memcpy(bf, (uint8_t *) UID_BASE, 12);
-	snprintf((char*) id->x,sizeof(id->x), "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-			bf[0], bf[1], bf[2], bf[3], bf[4], bf[5], bf[6], bf[7], bf[8],
-			bf[9], bf[10], bf[11]);
+	snprintf((char*) id->x, sizeof(id->x),
+			"%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", bf[0], bf[1],
+			bf[2], bf[3], bf[4], bf[5], bf[6], bf[7], bf[8], bf[9], bf[10],
+			bf[11]);
 
 	return GW_e_OK;
 }
@@ -74,4 +75,8 @@ uint32_t qog_gw_sys_getTimestamp() {
 	JDN += time.Seconds;
 
 	return JDN;
+}
+
+void qog_gw_sys_swReset() {
+	NVIC_SystemReset();
 }

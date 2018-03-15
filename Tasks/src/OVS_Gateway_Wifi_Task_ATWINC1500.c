@@ -48,7 +48,6 @@ static struct {
 	SOCKET number;
 } Sockets[MAX_OPEN_SOCKETS];
 
-//static uint8_t txBuff[TCP_RX_SOCKET_BUFFER_SIZE];
 static uint8_t rxStore[TCP_RX_SOCKET_BUFFER_SIZE];
 static uint8_t rxBuff[TCP_RX_SOCKET_BUFFER_SIZE];
 static ring_buffer_t rxRingBuf;
@@ -144,17 +143,10 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 				qog_gw_util_debug_msg("Socket CONN ABORTED");
 			}
 
-			//		qog_gw_util_debug_msg("recv %d", skRx);
-			//		qog_gw_util_debug_msg("%2x", *pstrRecv->pu8Buffer);
-			//memcpy(rxBufPtr++,pstrRecv->pu8Buffer,pstrRecv->s16BufferSize);
-			/*	while (idx++ < pstrRecv->s16BufferSize) {
-			 xQueueSend(m_gatewayInst->SocketRxQueue, pstrRecv->pu8Buffer++,
-			 0);
-			 }*/
 			rxFlag = true;
 		} else {
-			//skRx = -1;
 			close(Sockets[MQTT_SOCKET].number);
+			qog_gw_util_debug_msg("WIFI : ERROR Socket Closed bsize=%i",pstrRecv->s16BufferSize);
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
 	}
@@ -486,9 +478,11 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 		switch (m_gatewayInst->Status) {
 		case GW_STARTING:
 			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada
+			qog_gw_util_debug_msg("WIFI : GW_STARTING");
 			m_gatewayInst->Status = GW_WLAN_DISCONNECTED;
 			break;
 		case GW_AP_CONFIG_MODE: {
+			qog_gw_util_debug_msg("WIFI : GW_AP_CONFIG_MODE");
 			wifiInit();
 			tstrM2MAPConfig apConfig = { "QOGNI_CONFIG", 1, 0,
 			WEP_40_KEY_STRING_SIZE, "qognata33", (uint8) M2M_WIFI_SEC_OPEN,
@@ -507,49 +501,42 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO Ficar em AP_Config até terminar o processo ou por X segundos em caso de bateria
 			break;
 		case GW_AP_CONFIG_MODE_STDBY: {
+			qog_gw_util_debug_msg("WIFI : GW_AP_CONFIG_MODE_STDBY");
 			m2m_wifi_handle_events(NULL);
 		}
 			break;
 		case GW_BROKER_DNS_RESOLVED:
+			qog_gw_util_debug_msg("WIFI : GW_BROKER_DNS_RESOLVED");
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 			break;
 		case GW_BROKER_SOCKET_CLOSED:
+			qog_gw_util_debug_msg("WIFI : GW_BROKER_SOCKET_CLOSED");
 			Sockets[MQTT_SOCKET].number = socket(AF_INET, SOCK_STREAM, 0);
 
 			if (GatewaySocketOpen(TIMEOUT_SOCKET_OPEN, MQTT_SOCKET,
 					m_gatewayInst->BrokerParams.HostIp,
-					m_gatewayInst->BrokerParams.HostPort) == GW_e_OK)
+					m_gatewayInst->BrokerParams.HostPort) == GW_e_OK){
 				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
+				//m2m_wifi_set_sleep_mode(M2M_PS_DEEP_AUTOMATIC, 1);
+			}
 			else
 				m_gatewayInst->Status = GW_ERROR;
 
 			//TODO retry counter
 			break;
 		case GW_BROKER_SOCKET_OPEN: {
-			/*	uint16_t qBuffSize = 0;
-			 uint16_t qSize = uxQueueMessagesWaiting(
-			 m_gatewayInst->SocketTxQueue);
-
-			 while (qSize > 0) {
-			 xQueueReceive(m_gatewayInst->SocketTxQueue,
-			 &txBuff[qBuffSize++], 0);
-			 qSize--;
-			 }
-			 if (qBuffSize)
-			 send(Sockets[MQTT_SOCKET].number, txBuff, qBuffSize, 0);
-
-			 recv(Sockets[MQTT_SOCKET].number, rxBuff,
-			 sizeof(TCP_RX_SOCKET_BUFFER_SIZE), 0);
-			 */
-			//m2m_wifi_handle_events(NULL);
+			qog_gw_util_debug_msg("WIFI : GW_BROKER_SOCKET_OPEN");
 		}
 			break;
 		case GW_MQTT_CLIENT_CONNECTED:
+			qog_gw_util_debug_msg("WIFI : GW_MQTT_CLIENT_CONNECTED");
 			break;
 		case GW_MQTT_CLIENT_DISCONNECTED:
+			qog_gw_util_debug_msg("WIFI : GW_MQTT_CLIENT_DISCONNECTED");
 			m_gatewayInst->Status = GW_ERROR;
 			break;
 		case GW_WLAN_CONNECTED:
+			qog_gw_util_debug_msg("WIFI : GW_WLAN_CONNECTED");
 			//TODO retry counter
 			if (GatewayGetSystemTimeNTP(TIMEOUT_SOCKET_OPEN,
 			TASK_PERIOD_MS_WIFI) != GW_e_OK)
@@ -560,6 +547,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_WLAN_DISCONNECTED: {
+			qog_gw_util_debug_msg("WIFI : GW_WLAN_CONNECTED");
 			uint8_t retry = 0;
 			wifiInit();
 			for (retry = OVS_WLAN_RETRY; retry > 0; retry--) {
@@ -574,7 +562,8 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 		}
 			break;
 		case GW_ERROR:
-			HAL_Delay(1000);
+			qog_gw_util_debug_msg("WIFI : GW_ERROR");
+			HAL_Delay(5000);
 			m_gatewayInst->Status = GW_STARTING;
 			break;
 		default:
