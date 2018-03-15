@@ -22,6 +22,8 @@
 #include "stdlib.h"
 #include "string.h"
 #include "qog_util_ring_buffer.h"
+
+static const int WLAN_CONNECT_RETRY_DELAY = 1000;
 //-------- Gateway Interface - START
 static uint8_t NTP_Buffer[48];
 
@@ -132,13 +134,12 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 			skRx += pstrRecv->s16BufferSize;
 			ring_buffer_push_buffer_queue(&rxRingBuf, pstrRecv->pu8Buffer);
 
-			if (pstrRecv->s16BufferSize == SOCK_ERR_TIMEOUT){
+			if (pstrRecv->s16BufferSize == SOCK_ERR_TIMEOUT) {
 				skRx = SOCK_ERR_TIMEOUT;
 				qog_gw_util_debug_msg("Socket TIMEOUT");
 			}
 
-
-			if (pstrRecv->s16BufferSize == SOCK_ERR_CONN_ABORTED){
+			if (pstrRecv->s16BufferSize == SOCK_ERR_CONN_ABORTED) {
 				skRx = SOCK_ERR_CONN_ABORTED;
 				qog_gw_util_debug_msg("Socket CONN ABORTED");
 			}
@@ -146,7 +147,8 @@ static void socket_cb(SOCKET sock, uint8_t u8Msg, void *pvMsg) {
 			rxFlag = true;
 		} else {
 			close(Sockets[MQTT_SOCKET].number);
-			qog_gw_util_debug_msg("WIFI : ERROR Socket Closed bsize=%i",pstrRecv->s16BufferSize);
+			qog_gw_util_debug_msg("WIFI : ERROR Socket Closed bsize=%i",
+					pstrRecv->s16BufferSize);
 			m_gatewayInst->Status = GW_BROKER_SOCKET_CLOSED;
 		}
 	}
@@ -515,11 +517,10 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 
 			if (GatewaySocketOpen(TIMEOUT_SOCKET_OPEN, MQTT_SOCKET,
 					m_gatewayInst->BrokerParams.HostIp,
-					m_gatewayInst->BrokerParams.HostPort) == GW_e_OK){
+					m_gatewayInst->BrokerParams.HostPort) == GW_e_OK) {
 				m_gatewayInst->Status = GW_BROKER_SOCKET_OPEN;
 				//m2m_wifi_set_sleep_mode(M2M_PS_DEEP_AUTOMATIC, 1);
-			}
-			else
+			} else
 				m_gatewayInst->Status = GW_ERROR;
 
 			//TODO retry counter
@@ -548,16 +549,17 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			break;
 		case GW_WLAN_DISCONNECTED: {
 			qog_gw_util_debug_msg("WIFI : GW_WLAN_CONNECTED");
-			uint8_t retry = 0;
+//			uint8_t retry = 0;
 			wifiInit();
-			for (retry = OVS_WLAN_RETRY; retry > 0; retry--) {
-				if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK) {
-					m_gatewayInst->Status = GW_WLAN_CONNECTED;
-					break;
-				}
+//			for (retry = OVS_WLAN_RETRY; retry > 0; retry--) {
+			HAL_Delay(WLAN_CONNECT_RETRY_DELAY);
+			if (GatewayWLANConnect(m_gatewayInst) == GW_e_OK) {
+				m_gatewayInst->Status = GW_WLAN_CONNECTED;
+				break;
 			}
-			if (retry == 0)
-				m_gatewayInst->Status = GW_AP_CONFIG_MODE;
+//			}
+//			if (retry == 0)
+//				m_gatewayInst->Status = GW_AP_CONFIG_MODE;
 			//TODO retry counter
 		}
 			break;
