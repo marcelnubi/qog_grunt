@@ -407,7 +407,7 @@ void wifiInit() {
 	int8_t ret;
 	memset((uint8_t*) &param, 0, sizeof(tstrWifiInitParam));
 	qog_gw_pwr_wifi_disable();
-	HAL_Delay(200);
+	HAL_Delay(1000);
 	qog_gw_pwr_wifi_enable();
 	HAL_Delay(200);
 	nm_bsp_init();
@@ -565,7 +565,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			break;
 		case GW_ERROR:
 			qog_gw_util_debug_msg("WIFI : GW_ERROR");
-			HAL_Delay(5000);
+//			HAL_Delay(5000);
 			m_gatewayInst->Status = GW_STARTING;
 			break;
 		default:
