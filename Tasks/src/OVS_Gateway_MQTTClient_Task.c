@@ -180,6 +180,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			bool ret = true;
 
 			if (gw->Status != GW_BROKER_SOCKET_OPEN) {
+				qog_gw_util_debug_msg("#### SOCKET CLOSED BY SERVER ####");
 				MQTTClientState = MQTT_CLIENT_RESET;
 				break;
 			}
@@ -192,6 +193,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 			TickType_t start = xTaskGetTickCount();
 			while (avail-- > 0) {
 				if (publishData()) {
+					qog_gw_util_debug_msg("#### PUBLISH DATA FAIL ####");
 					MQTTClientState = RESET;
 					break;
 				}
