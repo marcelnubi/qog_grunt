@@ -128,6 +128,8 @@ void gw_init_gateway() {
 	m_gateway.Tasks.MQTTPublisherTask = &MQTTPublisherTaskDef;
 	m_gateway.Tasks.DataSourceTask = &DataSourceTaskDef;
 	m_gateway.Tasks.LocalStorageTask = &LocalStorageTaskDef;
+
+	qog_gw_sys_init_watchDog();
 }
 
 static void gw_init_shared_queues() {
@@ -268,6 +270,8 @@ void GruntTaskImpl(void const * argument) {
 	TickType_t xLastWakeTime;
 	const TickType_t xFrequency = portTICK_PERIOD_MS * OVS_GRUNT_LOOP_MS;
 
+	qog_gw_sys_kick_watchDog();
+
 	uint8_t diagMsgCtr = 0;
 	const uint8_t diagMsgDelay = 20;
 	xLastWakeTime = xTaskGetTickCount();
@@ -299,6 +303,7 @@ void GruntTaskImpl(void const * argument) {
 			qog_gw_util_debug_msg("Message Publish Fail = %d",
 					m_gateway.Diagnostics.MsgPublishFails);
 		}
+		qog_gw_sys_kick_watchDog();
 	}
 }
 

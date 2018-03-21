@@ -16,6 +16,10 @@ uint32_t qog_gw_sys_getTimestamp();
 qog_gw_error_t qog_gw_sys_setTime(qog_DateTime *);
 void qog_gw_sys_swReset();
 
+//WatchDog
+qog_gw_error_t qog_gw_sys_init_watchDog();
+qog_gw_error_t qog_gw_sys_kick_watchDog();
+
 extern void HAL_Delay(volatile uint32_t Delay);
 
 #endif /* INC_QOG_GATEWAY_SYSTEM_H_ */

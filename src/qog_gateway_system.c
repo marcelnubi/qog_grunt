@@ -80,3 +80,11 @@ uint32_t qog_gw_sys_getTimestamp() {
 void qog_gw_sys_swReset() {
 	NVIC_SystemReset();
 }
+
+qog_gw_error_t qog_gw_sys_init_watchDog() {
+	MX_IWDG_Init();
+	return GW_e_OK;
+}
+qog_gw_error_t qog_gw_sys_kick_watchDog() {
+	HAL_IWDG_Refresh(&hiwdg);
+}

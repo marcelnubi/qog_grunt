@@ -14,6 +14,7 @@
 #include "pb_decode.h"
 
 #include "rtc.h"
+#include "iwdg.h"
 
 #include "OVS_Channel.pb.h"
 #include "OVS_ChannelNumberData.pb.h"
