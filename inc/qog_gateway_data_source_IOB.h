@@ -10,8 +10,8 @@
 
 #include <stdint.h>
 
-extern void DataSourceInit();
-extern void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
-extern double DataSourceNumberRead(uint8_t channelNumber);
+void DataSourceInit(Gateway *);
+void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
+double DataSourceNumberRead(OVS_EdgeId * edgeId);
 
 #endif /* DATASOURCEAPI_H_ */

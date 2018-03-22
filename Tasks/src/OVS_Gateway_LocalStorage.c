@@ -6,17 +6,18 @@
  */
 
 #include "qog_ovs_gateway_internal_types.h"
+#include "qog_gateway_system.h"
 
 static qog_Task LocalStorageTaskImpl(Gateway * gwInst);
 
 qog_gateway_task LocalStorageTaskDef =
-{ &LocalStorageTaskImpl, 0x200, NULL };
+{ &LocalStorageTaskImpl, 128, NULL };
 
 static qog_Task LocalStorageTaskImpl(Gateway * gwInst)
 {
 	for (;;)
 	{
-		osDelay(1000);
+		HAL_Delay(1000);
 	}
 	return 0;
 }
