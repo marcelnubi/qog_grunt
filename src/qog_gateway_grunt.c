@@ -309,8 +309,23 @@ void GruntTaskImpl(void const * argument) {
 
 //ISR
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	if (GPIO_Pin == WIFI_IRQ_N_Pin) {
+	switch (GPIO_Pin) {
+	case WIFI_IRQ_N_Pin:
 		nm_bsp_isr_cb();
+		break;
+	case PB_01_Pin:
+		qog_gw_util_debug_msg("PB_01 Pressed");
+		break;
+	case PB_02_Pin: {
+		GPIO_PinState st = HAL_GPIO_ReadPin(PB_02_GPIO_Port, PB_02_Pin);
+		if (st == GPIO_PIN_SET)
+			qog_gw_util_debug_msg("PB_02 Pressed");
+		else
+			qog_gw_util_debug_msg("PB_02 Released");
+	}
+		break;
+	default:
+		break;
 	}
 }
 
