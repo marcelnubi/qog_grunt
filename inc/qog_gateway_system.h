@@ -20,6 +20,9 @@ void qog_gw_sys_swReset();
 qog_gw_error_t qog_gw_sys_init_watchDog();
 qog_gw_error_t qog_gw_sys_kick_watchDog();
 
+//Bootloader Jump
+void qog_gw_sys_bootloaderJump();
+
 extern void HAL_Delay(volatile uint32_t Delay);
 
 #endif /* INC_QOG_GATEWAY_SYSTEM_H_ */

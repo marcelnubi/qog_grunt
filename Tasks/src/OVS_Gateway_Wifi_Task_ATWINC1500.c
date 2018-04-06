@@ -477,6 +477,13 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 
 	for (;;) {
 		vTaskDelay(TASK_PERIOD_MS_WIFI);
+
+		if(m_gatewayInst->EnterWifiConfigMode){
+			m_gatewayInst->Status = GW_AP_CONFIG_MODE;
+			m_gatewayInst->EnterWifiConfigMode = false;
+		}
+
+
 		switch (m_gatewayInst->Status) {
 		case GW_STARTING:
 			//TODO Arbitrar entre AP Config ou Utilizar WLAN armazenada

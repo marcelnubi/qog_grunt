@@ -135,6 +135,7 @@ struct Gateway {
 	bool StopAll;
 
 	WLANConnectionParams WLANConnection;
+	bool EnterWifiConfigMode;
 	BrokerParams BrokerParams;
 
 	EdgeChannel EdgeChannels[MAX_DATA_CHANNELS];

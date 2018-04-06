@@ -87,4 +87,44 @@ qog_gw_error_t qog_gw_sys_init_watchDog() {
 }
 qog_gw_error_t qog_gw_sys_kick_watchDog() {
 	HAL_IWDG_Refresh(&hiwdg);
+	return GW_e_OK;
+}
+
+void qog_gw_sys_bootloaderJump()
+{
+	typedef void (*pFunction)(void);
+	pFunction JumpToApplication;
+
+	__HAL_RCC_USART1_FORCE_RESET();
+	HAL_Delay(5);
+	__HAL_RCC_USART1_RELEASE_RESET();
+	HAL_Delay(5);
+
+	HAL_RCC_DeInit();
+
+	SysTick->CTRL = 0;
+	SysTick->LOAD = 0;
+	SysTick->VAL = 0;
+
+	/**
+	 * Step: Disable all interrupts
+	 */
+	__disable_irq();
+
+	/* ARM Cortex-M Programming Guide to Memory Barrier Instructions.*/
+	__DSB();
+
+	__HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH()
+	;
+
+	/* Remap is bot visible at once. Execute some unrelated command! */
+	__DSB();
+	__ISB();
+
+	JumpToApplication = (void (*)(void)) (*((uint32_t *) ((BOOTLOADER_BASE + 4))));
+
+	/* Initialize user application's Stack Pointer */
+	__set_MSP(*(__IO uint32_t*) BOOTLOADER_BASE);
+
+	JumpToApplication();
 }

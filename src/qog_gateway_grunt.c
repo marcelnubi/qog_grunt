@@ -14,6 +14,7 @@
 
 #include "qog_gateway_config.h"
 #include "qog_gateway_system.h"
+#include "qog_gateway_power.h"
 #include "qog_ovs_gateway_internal_types.h"
 #include "qog_gateway_util.h"
 
@@ -308,6 +309,7 @@ void GruntTaskImpl(void const * argument) {
 }
 
 //ISR
+static TickType_t pb_02_t = 0;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	switch (GPIO_Pin) {
 	case WIFI_IRQ_N_Pin:
@@ -318,10 +320,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		break;
 	case PB_02_Pin: {
 		GPIO_PinState st = HAL_GPIO_ReadPin(PB_02_GPIO_Port, PB_02_Pin);
-		if (st == GPIO_PIN_SET)
+		if (st == GPIO_PIN_SET) {
 			qog_gw_util_debug_msg("PB_02 Pressed");
-		else
-			qog_gw_util_debug_msg("PB_02 Released");
+			pb_02_t = xTaskGetTickCount();
+		} else {
+			TickType_t temp = xTaskGetTickCount() - pb_02_t;
+			qog_gw_util_debug_msg("PB_02 Released T=%u", temp);
+			if (temp >= 3000 && temp < 10000) {
+				m_gateway.EnterWifiConfigMode = true;
+			} else if (temp > 10000) {
+				qog_gw_pwr_iob_disable();
+				qog_gw_pwr_wifi_disable();
+				qog_gw_sys_bootloaderJump();
+			}
+		}
+
 	}
 		break;
 	default:
