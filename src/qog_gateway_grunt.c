@@ -268,6 +268,8 @@ bool gwPopNumberData(OVS_ChannelNumberData ** out) {
 //RTOS Task
 void GruntTaskImpl(void const * argument) {
 
+	__HAL_DBGMCU_FREEZE_IWDG();
+
 	TickType_t xLastWakeTime;
 	const TickType_t xFrequency = portTICK_PERIOD_MS * OVS_GRUNT_LOOP_MS;
 
