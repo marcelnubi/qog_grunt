@@ -555,7 +555,7 @@ qog_Task WifiTaskImpl(Gateway * gwInst) {
 			//TODO retry counter
 			break;
 		case GW_WLAN_DISCONNECTED: {
-			qog_gw_util_debug_msg("WIFI : GW_WLAN_CONNECTED");
+			qog_gw_util_debug_msg("WIFI : GW_WLAN_DISCONNECTED");
 //			uint8_t retry = 0;
 			wifiInit();
 //			for (retry = OVS_WLAN_RETRY; retry > 0; retry--) {
