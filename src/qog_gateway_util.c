@@ -29,6 +29,7 @@ bool qog_gw_util_isEdgeEqual(Edge * ec1, Edge *ec2) {
 		OVS_Edge_IOB_id e1, e2;
 		pb_decode(&istream1, OVS_Edge_IOB_id_fields, &e1);
 		pb_decode(&istream2, OVS_Edge_IOB_id_fields, &e2);
+		ret = true;
 
 		if (e1.Iob != e2.Iob) {
 			ret = false;
@@ -42,7 +43,7 @@ bool qog_gw_util_isEdgeEqual(Edge * ec1, Edge *ec2) {
 			ret = false;
 			break;
 		}
-		if (e1.URI.bytes != e2.URI.bytes) {
+		if (strcmp(e1.URI.bytes, e2.URI.bytes)) {
 			ret = false;
 			break;
 		}
