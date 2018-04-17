@@ -306,14 +306,14 @@ bool publishEdgeDrop(GatewayCommand* dt) {
 }
 
 bool publishEdgeUpdate(GatewayCommand* dt) {
-	uint8_t msgBuf[OVS_EdgeId_size];
+	uint8_t msgBuf[OVS_Channel_size];
 	uint8_t topic[128];
 	MQTTMessage msg;
 	GatewayId gid;
 	qog_gw_sys_getUri(&gid);
 
 	pb_ostream_t ostream = pb_ostream_from_buffer(msgBuf, sizeof(msgBuf));
-	pb_encode(&ostream, OVS_EdgeId_fields, (EdgeChannel*) dt->pl);
+	pb_encode(&ostream, OVS_Channel_fields, (EdgeChannel*) dt->pl);
 	msg.qos = QOS2;
 	msg.payload = msgBuf;
 	msg.payloadlen = ostream.bytes_written;
