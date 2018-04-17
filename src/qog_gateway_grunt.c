@@ -199,12 +199,12 @@ void gwUpdateEdge(EdgeChannel * ch) {
 				&ch->EdgeId)) {
 			m_gateway.EdgeChannels[idx] = *ch;
 			cmd.Command = EDGE_UPDATE;
-			cmd.pl = &ch;
+			cmd.pl = &m_gateway.EdgeChannels[idx];
 			break;
 		}
 	}
 
-	if (cmd.pl == &ch)
+	if (cmd.pl != NULL)
 		xQueueSend(m_gateway.CommandQueue, &cmd, 0);
 }
 void gwGetEdgeList() {
