@@ -133,7 +133,7 @@ static qog_Task MQTTPublisherTaskImpl(Gateway * gwInst) {
 	conn.password.cstring = (char*) gw->BrokerParams.Password;
 	conn.clientID.cstring = (char*) gid.x;
 	conn.cleansession = false;
-	conn.keepAliveInterval = 5*MQTT_TASK_LOOP_MS/1000;
+	conn.keepAliveInterval = 5 * MQTT_TASK_LOOP_MS / 1000;
 
 	// Initialise the xLastWakeTime variable with the current time.
 	xLastWakeTime = xTaskGetTickCount();
