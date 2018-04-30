@@ -63,6 +63,10 @@ typedef struct {
 	uint8_t Parameters[32];
 } qog_DataSource_config;
 
+typedef enum {
+	DS_OP_OK = 0, DS_OP_READ_ERROR, DS_OP_INIT_ERROR, DS_OP_INVALID_ARG
+} qog_DataSource_error;
+
 typedef struct Gateway Gateway;
 
 typedef struct {

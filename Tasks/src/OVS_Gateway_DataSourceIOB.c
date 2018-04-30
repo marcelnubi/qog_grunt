@@ -19,7 +19,7 @@
 static Gateway * m_gateway;
 static double currentVal = 0;
 
-void __attribute__((weak)) DataSourceInit(Gateway * gw) {
+qog_DataSource_error __attribute__((weak)) DataSourceInit(Gateway * gw) {
 	uint32_t asd = 123;
 	asd++;
 	asd = 12 + asd;
@@ -39,17 +39,20 @@ void __attribute__((weak)) DataSourceInit(Gateway * gw) {
 	sConf.Rank = ADC_RANK_NONE;
 	sConf.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
 	if (HAL_ADC_ConfigChannel(&hadc, &sConf) != HAL_OK) {
-		Error_Handler();
+		return DS_OP_INIT_ERROR;
 	}
 
 	qog_gw_pwr_iob_enable();
+	return DS_OP_OK;
 }
-void __attribute__((weak)) DataSourceConfig(uint8_t channelNumber,
-		uint8_t * configBytes) {
+qog_DataSource_error __attribute__((weak)) DataSourceConfig(
+		uint8_t channelNumber, uint8_t * configBytes) {
+	return DS_OP_OK;
 }
-double __attribute__((weak)) DataSourceNumberRead(OVS_EdgeId * IobEdge) {
+qog_DataSource_error __attribute__((weak)) DataSourceNumberRead(
+		OVS_EdgeId * IobEdge, double *out) {
 	double temperature = 0;
-
+	qog_DataSource_error ret = DS_OP_OK;
 	OVS_Edge_IOB_id edge;
 	pb_istream_t istream = pb_istream_from_buffer(IobEdge->Id.bytes,
 			IobEdge->Id.size);
@@ -59,7 +62,7 @@ double __attribute__((weak)) DataSourceNumberRead(OVS_EdgeId * IobEdge) {
 	case 0: {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Master_Receive(&hi2c2, 0x14 << 1, dasd, 2, 100) != HAL_OK) {
-			temperature = m_gateway->TimeStamp;
+			ret = DS_OP_READ_ERROR;
 		} else {
 			uint16_t temp_code = (dasd[0] << 8) | dasd[1];
 			double Vf = temp_code * 0.000045776;
@@ -77,7 +80,7 @@ double __attribute__((weak)) DataSourceNumberRead(OVS_EdgeId * IobEdge) {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Mem_Read(&hi2c2, 0x40 << 1, 0xE5, 1, dasd, 2, 100)
 				!= HAL_OK)
-			temperature = m_gateway->TimeStamp;
+			ret = DS_OP_READ_ERROR;
 		else {
 			uint16_t rh_code = (dasd[0] << 8) | dasd[1];
 			temperature = (125.0 * rh_code / 65536) - 6.0;
@@ -89,7 +92,7 @@ double __attribute__((weak)) DataSourceNumberRead(OVS_EdgeId * IobEdge) {
 		uint8_t dasd[2] = { 0, 0 };
 		if (HAL_I2C_Mem_Read(&hi2c2, 0x40 << 1, 0xE3, 1, dasd, 2, 100)
 				!= HAL_OK)
-			temperature = m_gateway->TimeStamp;
+			ret = DS_OP_READ_ERROR;
 		else {
 			uint16_t temp_code = (dasd[0] << 8) | dasd[1];
 			temperature = (175.72 * temp_code / 65536) - 46.85;
@@ -101,7 +104,8 @@ double __attribute__((weak)) DataSourceNumberRead(OVS_EdgeId * IobEdge) {
 		break;
 	}
 
-	return temperature;
+	*out = temperature;
+	return ret;
 }
 
 struct {
@@ -140,9 +144,15 @@ qog_Task DataSourceTaskImpl(Gateway * gwInst) {
 		for (uint8_t idx = 0; idx < MAX_DATA_CHANNELS; idx++) {
 			if (MeasurementSchedule.Channels[idx].Enabled == true) {
 				if (MeasurementSchedule.NextMeasurement[idx] <= thisTime) {
-					currentVal = DataSourceNumberRead(&MeasurementSchedule.Channels[idx].EdgeId);
-					m_gateway->CB.gwPushNumberData(currentVal,
-							MeasurementSchedule.Channels[idx].Id, thisTime);
+					if (DataSourceNumberRead(
+							&MeasurementSchedule.Channels[idx].EdgeId,
+							&currentVal) == DS_OP_OK) {
+						m_gateway->CB.gwPushNumberData(currentVal,
+								MeasurementSchedule.Channels[idx].Id, thisTime);
+					}else{
+						m_gateway->Diagnostics.EdgeReadFails++;
+					}
+
 					MeasurementSchedule.NextMeasurement[idx] = thisTime
 							+ MeasurementSchedule.Channels[idx].Period;
 				}

@@ -10,8 +10,8 @@
 
 #include <stdint.h>
 
-void DataSourceInit(Gateway *);
-void DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
-double DataSourceNumberRead(OVS_EdgeId * edgeId);
+qog_DataSource_error DataSourceInit(Gateway *);
+qog_DataSource_error DataSourceConfig(uint8_t channelNumber ,uint8_t * configBytes);
+qog_DataSource_error DataSourceNumberRead(OVS_EdgeId * edgeId, double *out);
 
 #endif /* DATASOURCEAPI_H_ */
