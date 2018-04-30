@@ -306,6 +306,9 @@ void GruntTaskImpl(void const * argument) {
 			qog_gw_util_debug_msg("Uptime = %d", m_gateway.Diagnostics.Uptime);
 			qog_gw_util_debug_msg("Message Publish Fail = %d",
 					m_gateway.Diagnostics.MsgPublishFails);
+			qog_gw_util_debug_msg("Edge Read Fail = %d",
+								m_gateway.Diagnostics.EdgeReadFails);
+
 		}
 		qog_gw_sys_kick_watchDog();
 	}
